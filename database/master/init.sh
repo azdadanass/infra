@@ -14,6 +14,9 @@ mysql -u root -proot -e "FLUSH PRIVILEGES;"
 
 
 sudo systemctl stop mysql
+
+
+sudo rm /var/lib/mysql/ib_logfile*
 mkdir -p /home/azdad/dbdata
 sudo rsync -av /var/lib/mysql /home/azdad/dbdata
 sudo mv /var/lib/mysql /var/lib/mysql.bak
@@ -23,6 +26,6 @@ sudo sed -i "/alias \/var\/lib\/mysql/c\alias \/var\/lib\/mysql\/ -> \/home\/azd
 
 sudo systemctl restart apparmor
 sudo mkdir /var/lib/mysql/mysql -p
-sudo rm /var/lib/mysql/ib_logfile*
+
 sudo systemctl start mysql
 
