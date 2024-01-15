@@ -8,10 +8,11 @@ bind-address		= 0.0.0.0
 key_buffer_size		= 16M
 myisam-recover-options  = BACKUP
 log_error = /var/log/mysql/error.log
+max_connections = 300
 
 log_bin = /var/log/mysql/mysql-bin.log
 max_binlog_size   = 500M
-slow_query_log = 1
+
 
 innodb_dedicated_server = ON
 
@@ -19,5 +20,10 @@ skip-name-resolve=ON
 innodb_redo_log_capacity = 3G
 
 sql_mode = "STRICT_TRANS_TABLES,NO_ZERO_IN_DATE,NO_ZERO_DATE,ERROR_FOR_DIVISION_BY_ZERO,NO_ENGINE_SUBSTITUTION"
+
+general_log = 0
+slow_query_log = 1
+#log=/var/log/mysqld_query.log
+
 
 read_only = 1
