@@ -14,7 +14,7 @@ max_binlog_size   = 500M
 slow_query_log = 1
 
 
-datadir=/home/azdad/dbdata/mysql
+
 
 innodb_buffer_pool_size = 12G
 innodb_log_file_size = 12G

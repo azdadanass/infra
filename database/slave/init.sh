@@ -14,21 +14,10 @@ mysql -u root -proot -e "FLUSH PRIVILEGES;"
 
 
 sudo systemctl stop mysql
-
-
 sudo rm /var/lib/mysql/ib_logfile*
-mkdir -p /home/azdad/dbdata
-sudo rsync -av /var/lib/mysql /home/azdad/dbdata
-sudo mv /var/lib/mysql /var/lib/mysql.bak
 script_dir=$(dirname $0)
 sudo cp $script_dir/mysqld.cnf /etc/mysql/mysql.conf.d/mysqld.cnf
-sudo sed -i "/alias \/var\/lib\/mysql/c\alias \/var\/lib\/mysql\/ -> \/home\/azdad\/dbdata\/mysql\/," /etc/apparmor.d/tunables/alias
-
-sudo systemctl restart apparmor
-sudo mkdir /var/lib/mysql/mysql -p
-
 sudo systemctl start mysql
-
 
 
 read -p "Enter master address [192.168.1.100] : " master_ip
@@ -37,7 +26,9 @@ master_ip=${master_ip:-192.168.1.100}
 read -p "Enter master_log_file address [mysql-bin.000001] : " master_log_file
 master_log_file=${master_log_file:-mysql-bin.000001}
 
-read -p "Enter master_log_pos address : " master_log_pos
+read -p "Enter master_log_pos  [861] : " master_log_pos
+master_log_pos=${master_log_pos:-861}
+
 
 mysql -u root -proot -e "CHANGE MASTER TO MASTER_HOST='$master_ip', MASTER_USER='slaveuser', MASTER_PASSWORD='pass', MASTER_LOG_FILE='$master_log_file', MASTER_LOG_POS=$master_log_pos;"
 mysql -u root -proot -e "start slave;"
