@@ -19,6 +19,8 @@ echo '{"insecure-registries" : ["192.168.100.160:5000"]}' | sudo tee /etc/docker
 # Redemarrage docker
 sudo service docker restart
 
+echo You should reboot system !!!
+
 
 
 
