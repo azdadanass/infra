@@ -1,3 +1,4 @@
+sudo -i
 wget https://repo.nagios.com/GPG-KEY-NAGIOS-V3
 rpm --import GPG-KEY-NAGIOS-V3
 
