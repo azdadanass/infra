@@ -1,5 +1,9 @@
 script_dir=$(dirname $0)
 
+read -p "Enter database name [gcom] : " db_name
+db_name=${db_name:-gcom}
+
+
 #############################################################
 # Installation p7zip-full pour les compressions
 #############################################################
@@ -18,7 +22,7 @@ cp $script_dir/backup-full.sh ~/scripts
 cp $script_dir/config.cnf ~/scripts
 
 
-(crontab -l 2>/dev/null; echo -e "00 19 * * * ~/backup.sh\n00 00 * * SUN ~/backup-full.sh") | crontab -
+(crontab -l 2>/dev/null; echo -e "00 19 * * * ~/backup.sh $db_name\n00 00 * * SUN ~/backup-full.sh $db_name") | crontab -
 
 #############################################################
 # Installation mysql
