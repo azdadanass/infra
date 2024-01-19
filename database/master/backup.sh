@@ -8,7 +8,7 @@ backup_file=$backup_folder/$database`date +%Y-%m-%d_%H-%M`.7z
 
 echo "" 2> $error_log
 
-find $backup_folder -type f -name="$database*" -mtime +7 -delete
+find $backup_folder -type f -name "$database*" -mtime +7 -delete
 
 mysqldump \
  --defaults-extra-file=~/scripts/config.cnf \
