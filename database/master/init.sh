@@ -1,4 +1,23 @@
 #############################################################
+# Installation p7zip-full pour les compressions
+#############################################################
+
+sudo apt -y install p7zip-full
+
+
+# create folder
+mkdir -p ~/scripts
+mkdir -p ~/log
+mkdir -p ~/tmp
+
+cp $script_dir/backup.sh ~/scripts
+cp $script_dir/backup-full.sh ~/scripts
+cp $script_dir/config.cnf ~/scripts
+
+
+(crontab -l 2>/dev/null; echo -e "00 19 * * * ~/backup.sh\n00 00 * * SUN ~/backup-full.sh") | crontab -
+
+#############################################################
 # Installation mysql
 #############################################################
 
@@ -29,24 +48,7 @@ mysql -u root -proot -e "flush privileges;"
 mysql -u root -proot -e "show grants for slaveuser@$slave_ip;"
 mysql -u root -proot -e "show master status\G"
 
-#############################################################
-# Installation p7zip-full pour les compressions
-#############################################################
 
-sudo apt -y install p7zip-full
-
-
-# create folder
-mkdir -p ~/scripts
-mkdir -p ~/log
-mkdir -p ~/tmp
-
-cp $script_dir/backup.sh ~/scripts
-cp $script_dir/backup-full.sh ~/scripts
-cp $script_dir/config.cnf ~/scripts
-
-
-(crontab -l 2>/dev/null; echo -e "00 19 * * * ~/backup.sh\n00 00 * * SUN ~/backup-full.sh") | crontab -
 
 
 
