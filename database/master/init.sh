@@ -1,3 +1,5 @@
+script_dir=$(dirname $0)
+
 #############################################################
 # Installation p7zip-full pour les compressions
 #############################################################
@@ -34,7 +36,7 @@ mysql -u root -proot -e "FLUSH PRIVILEGES;"
 
 sudo systemctl stop mysql
 sudo rm /var/lib/mysql/ib_logfile*
-script_dir=$(dirname $0)
+
 sudo cp $script_dir/mysqld.cnf /etc/mysql/mysql.conf.d/mysqld.cnf
 sudo systemctl start mysql
 
