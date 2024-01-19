@@ -7,7 +7,7 @@ backup_file=~/backup/gcom-full_`date +%Y-%m-%d_%H-%M`.7z
 
 echo "" 2> $error_log
 
-rm 9backup_folder/gcom*
+find $backup_folder -type f -mtime +7 -delete  
 
 mysqldump \
  --defaults-extra-file=~/scripts/config.cnf \
