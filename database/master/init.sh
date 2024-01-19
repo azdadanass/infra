@@ -11,6 +11,7 @@ sudo apt -y install p7zip-full
 mkdir -p ~/scripts
 mkdir -p ~/log
 mkdir -p ~/tmp
+mkdir -p ~/backup/db
 
 cp $script_dir/backup.sh ~/scripts
 cp $script_dir/backup-full.sh ~/scripts

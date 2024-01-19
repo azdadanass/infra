@@ -1,9 +1,10 @@
 #!/bin/bash
 
+database=$1
 error_log=~/log/backup_db_error.log
 backup_folder=~/backup/db
 sql_file=~/tmp/gcom-full.sql
-backup_file=~/backup/gcom-full_`date +%Y-%m-%d_%H-%M`.7z
+backup_file=$backup_folder/gcom-full_`date +%Y-%m-%d_%H-%M`.7z
 
 echo "" 2> $error_log
 
