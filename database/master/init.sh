@@ -22,7 +22,7 @@ cp $script_dir/backup-full.sh ~/scripts
 cp $script_dir/config.cnf ~/scripts
 
 
-(crontab -l 2>/dev/null; echo -e "00 19 * * * ~/backup.sh $db_name\n00 00 * * SUN ~/backup-full.sh $db_name") | crontab -
+(crontab -l 2>/dev/null; echo -e "00 19 * * * ~/scripts/backup.sh $db_name\n00 00 * * SUN ~/scripts/backup-full.sh $db_name") | crontab -
 
 #############################################################
 # Installation mysql
