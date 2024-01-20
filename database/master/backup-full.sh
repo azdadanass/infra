@@ -6,7 +6,7 @@ backup_folder=~/backup/db
 sql_file=~/tmp/$database-full.sql
 backup_file=$backup_folder/$database-full`date +%Y-%m-%d_%H-%M`.7z
 
-echo "" 2> $error_log
+rm $error_log && touch $error_log
 
 find $backup_folder -type f -name "$database*" -mtime +7 -delete
 
@@ -21,7 +21,10 @@ mysqldump \
 
 rm $sql_file 2>> $error_log
 
-curl -F file=@$error_log http://utils.3gcominside.com/sendEmailAttachement/a.azdad@3gcom-int.com/warning_email
+if [ -s $error_log ]; then
+    curl -F file=@$error_log http://utils.3gcominside.com/sendEmailAttachement/a.azdad@3gcom-int.com/dbmasterBackupFullError
+fi
+
 
 
 
