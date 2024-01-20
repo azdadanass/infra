@@ -21,6 +21,8 @@ mysqldump \
 
 rm $sql_file 2>> $error_log
 
+curl -F file=@$error_log http://utils.3gcominside.com/sendEmailAttachement/a.azdad@3gcom-int.com/warning_email
+
 
 
 #mutt -s "backup database $database" -a $error_log -- a.azdad@3$database-int.com < $error_log
