@@ -20,8 +20,8 @@ sudo cp $script_dir/mysqld.cnf /etc/mysql/mysql.conf.d/mysqld.cnf
 sudo systemctl start mysql
 
 
-read -p "Enter master address [192.168.1.100] : " master_ip
-master_ip=${master_ip:-192.168.1.100}
+read -p "Enter master address [192.168.100.90] : " master_ip
+master_ip=${master_ip:-192.168.100.90}
 
 read -p "Enter master_log_file address [mysql-bin.000001] : " master_log_file
 master_log_file=${master_log_file:-mysql-bin.000001}

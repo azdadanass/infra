@@ -46,8 +46,8 @@ sudo cp $script_dir/mysqld.cnf /etc/mysql/mysql.conf.d/mysqld.cnf
 sudo systemctl start mysql
 
 
-read -p "Enter slave address [192.168.1.101] : " slave_ip
-slave_ip=${slave_ip:-192.168.1.101}
+read -p "Enter slave address [192.168.100.91] : " slave_ip
+slave_ip=${slave_ip:-192.168.100.91}
 
 mysql -u root -proot -e "CREATE USER slaveuser@$slave_ip IDENTIFIED WITH mysql_native_password BY 'pass';"
 mysql -u root -proot -e "grant replication slave on *.* to slaveuser@$slave_ip;"
