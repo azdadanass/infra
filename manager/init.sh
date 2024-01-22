@@ -11,7 +11,7 @@ sudo usermod -aG docker $USER
 echo "try to reconnect with ssh -A to forward personal ssh keys"
 
 #install registry
-docker run -d -p 5000:5000 --restart=always --name registry registry:2
+sudo docker run -d -p 5000:5000 --restart=always --name registry registry:2
 echo '{"insecure-registries" : ["192.168.100.160:5000"]}' | sudo tee /etc/docker/daemon.json
 
 mkdir -p ~/scripts
