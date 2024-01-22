@@ -10,16 +10,6 @@ sudo apt-get install docker-ce docker-ce-cli containerd.io
 sudo usermod -aG docker $USER
 echo "try to reconnect with ssh -A to forward personal ssh keys"
 
-#install registry
-sudo docker run -d -p 5000:5000 --restart=always --name registry registry:2
-echo '{"insecure-registries" : ["192.168.100.160:5000"]}' | sudo tee /etc/docker/daemon.json
-
-mkdir -p ~/scripts
-mkdir -p ~/log
-
-cp $script_dir/* ~/scripts
-
-
 # generate ssh key
 eval $(ssh-agent)
 ssh-keygen -t ed25519 -b 4096 -C "azdadanass@gmail.com" -f ~/.ssh/bitbucket_work
@@ -29,10 +19,9 @@ echo "Host bitbucket.org" >> ~/.ssh/config
 echo  " AddKeysToAgent yes" >> ~/.ssh/config
 echo  " IdentityFile ~/.ssh/bitbucket_work" >> ~/.ssh/config
 
+echo -e "\n\n\n"
 echo copy this key to bitbucket 
-
 cat ~/.ssh/bitbucket_work.pub
-
-
+echo -e "\n\n\n"
 
 echo Please to restart
