@@ -24,4 +24,4 @@ echo copy this key to bitbucket
 cat ~/.ssh/bitbucket_work.pub
 echo -e "\n\n\n"
 
-echo Please to restart
+echo Please to restart (dont forget to run init2.sh after reboot)
