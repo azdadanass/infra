@@ -19,4 +19,20 @@ mkdir -p ~/log
 
 cp $script_dir/* ~/scripts
 
+
+# generate ssh key
+eval $(ssh-agent)
+ssh-keygen -t ed25519 -b 4096 -C "azdadanass@gmail.com" -f ~/.ssh/bitbucket_work
+ssh-add ~/.ssh/bitbucket_work
+
+echo "Host bitbucket.org" >> ~/.ssh/config
+echo  " AddKeysToAgent yes" >> ~/.ssh/config
+echo  " IdentityFile ~/.ssh/bitbucket_work" >> ~/.ssh/config
+
+echo copy this key to bitbucket 
+
+cat ~/.ssh/bitbucket_work.pub
+
+
+
 echo Please to restart
