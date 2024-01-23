@@ -10,6 +10,9 @@ $script_dir/../commons/install-ncpa.sh
 
 mkdir -p ~/files
 
+sudo apt-get update
+sudo apt-get install sshfs
+
 ssh-keygen
 ssh-copy-id azdad@$files_server_ip
 
