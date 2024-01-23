@@ -12,6 +12,10 @@ echo "try to reconnect with ssh -A to forward personal ssh keys"
 
 # generate ssh key
 eval $(ssh-agent)
+
+#create default keygen
+ssh-keygen
+#create bitbucket keygen
 ssh-keygen -t ed25519 -b 4096 -C "azdadanass@gmail.com" -f ~/.ssh/bitbucket_work
 ssh-add ~/.ssh/bitbucket_work
 
@@ -24,4 +28,4 @@ echo copy this key to bitbucket
 cat ~/.ssh/bitbucket_work.pub
 echo -e "\n\n\n"
 
-echo Please to restart (dont forget to run init2.sh after reboot)
+echo Please to restart ,dont forget to run init2.sh after reboot
