@@ -4,8 +4,11 @@ read -p "Enter files_server ip [192.168.100.200] : " files_server_ip
 db_name=${db_name:-192.168.100.200}
 
 
-$script_dir/../commons/install-docker.sh
+
 $script_dir/../commons/install-ncpa.sh
+$script_dir/../commons/install-docker.sh
+
+sudo service docker restart
 
 
 mkdir -p ~/files
@@ -22,3 +25,4 @@ echo "azdad@$files_server_ip:/home/azdad/gcom/files /home/azdad/files    fuse.ss
 sudo mount -a
 
 echo please to reboot
+
