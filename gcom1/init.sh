@@ -8,6 +8,8 @@ $script_dir/../commons/install-docker.sh
 $script_dir/../commons/install-ncpa.sh
 
 
+mkdir -p files
+
 ssh-keygen
 ssh-copy-id azdad@$files_server_ip
 
