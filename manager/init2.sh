@@ -10,7 +10,7 @@ mkdir -p ~/git
 
 cp $script_dir/* ~/scripts
 
-cd git
+cd ~/git
 git clone git@bitbucket.org:anassjuventus/docker.git
 
 
