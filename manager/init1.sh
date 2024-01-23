@@ -8,7 +8,7 @@ echo "deb [arch=amd64 signed-by=/usr/share/keyrings/docker-archive-keyring.gpg] 
 sudo apt-get update
 sudo apt-get install docker-ce docker-ce-cli containerd.io
 sudo usermod -aG docker $USER
-echo "try to reconnect with ssh -A to forward personal ssh keys"
+echo '{"insecure-registries" : ["192.168.100.160:5000"]}' | sudo tee /etc/docker/daemon.json
 
 # generate ssh key
 eval $(ssh-agent)
