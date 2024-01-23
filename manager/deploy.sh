@@ -70,3 +70,20 @@ ssh azdad@$app_address docker pull $registry_address/$app-$erp:latest
 echo -e "${BLUE}run app ${NC}"
 ~/git/docker/$app/run.sh $app $erp $app_address $app_port $registry_address
 
+
+if [ $erp = "gcom" ]
+then
+    echo "WAIIIIIIIIIIIIIIIIIIIIIIIIIIIIIIT"
+    echo -e "${BLUE}ssh-copy-id azdad@192.168.1.80 ${NC}"
+    ssh-copy-id azdad@192.168.1.80
+    echo -e "${BLUE}remove existing container & images ${NC}"
+    ssh azdad@192.168.1.80 docker stop $app-$erp
+    ssh azdad@192.168.1.80 docker rm $app-$erp
+    ssh azdad@192.168.1.80 docker image rm $registry_address/$app-$erp:latest 
+
+    echo -e "${BLUE}pull image in host ${NC}"
+    ssh azdad@192.168.1.80 docker pull $registry_address/$app-$erp:latest
+
+    echo -e "${BLUE}run app ${NC}"
+    ~/git/docker/$app/run.sh $app $erp 192.168.1.80 $app_port $registry_address
+fi
