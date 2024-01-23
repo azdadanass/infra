@@ -73,7 +73,8 @@ echo -e "${BLUE}run app ${NC}"
 
 if [ $erp = "gcom" ]
 then
-    echo "WAIIIIIIIIIIIIIIIIIIIIIIIIIIIIIIT"
+    echo "Wait 5min"
+    sleep 300
     echo -e "${BLUE}ssh-copy-id azdad@192.168.1.80 ${NC}"
     ssh-copy-id azdad@192.168.1.80
     echo -e "${BLUE}remove existing container & images ${NC}"
