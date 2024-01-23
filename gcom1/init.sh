@@ -16,6 +16,6 @@ sudo apt-get install sshfs
 ssh-keygen
 ssh-copy-id azdad@$files_server_ip
 
-echo "azdad@:$files_server_ip/home/azdad/gcom/files /home/azdad/files fuse.sshfs noauto,x-systemd.automount,_netdev,allow_other,IdentityFile=/home/azdad/.ssh/id_rsa,reconnect,follow_symlinks 0 0" | sudo tee -a /etc/fstab
+echo "azdad@$files_server_ip:/home/azdad/gcom/files /home/azdad/files fuse.sshfs noauto,x-systemd.automount,_netdev,allow_other,IdentityFile=/home/azdad/.ssh/id_rsa,reconnect,follow_symlinks 0 0" | sudo tee -a /etc/fstab
 
 echo please to reboot
