@@ -1,0 +1,12 @@
+sudo apt-get update
+sudo apt-get install sshfs
+
+
+ssh-keygen
+ssh-copy-id azdad@192.168.1.200
+
+
+
+in /etc/fstab add
+
+azdad@192.168.1.200:/home/azdad/gcom/files /home/azdad/files fuse.sshfs noauto,x-systemd.automount,_netdev,allow_other,IdentityFile=/home/azdad/.ssh/id_rsa,reconnect,follow_symlinks 0 0
