@@ -12,6 +12,7 @@ sudo service docker restart
 
 
 mkdir -p ~/files
+sudo chattr +i ~/files
 
 sudo apt-get update
 sudo apt-get install sshfs
