@@ -1,0 +1,11 @@
+# m h  dom mon dow   command
+05 * * * * /home/azdad/scripts/backup.sh "/home/azdad/backup"
+30 20 * * * /home/azdad/scripts/backup.sh "/home/azdad/backup" -sendNotification
+
+05 * * * * /home/azdad/scripts/backup.sh "/home/azdad/drive/drive3/backup"
+30 22 * * * /home/azdad/scripts/backup.sh "/home/azdad/drive/drive3/backup" -sendNotification
+
+00 00 * * * /home/azdad/scripts/delete-old-db-gcom.sh
+
+
+00 01 * * * /home/azdad/scripts/rclone.sh
