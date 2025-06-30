@@ -1,0 +1,2 @@
+00 19 * * * /root/scripts/export_db.sh
+00 00 * * SUN /root/scripts/export_db.sh --type=full

@@ -26,20 +26,70 @@ log_error() {
   echo_color "${RED}$1${NC}"
 }
 
+format_duration() {
+  local seconds=$1
+  if (( seconds < 60 )); then
+    printf "%ds" $seconds
+  else
+    printf "%dm %ds" $((seconds/60)) $((seconds%60))
+  fi
+}
+
+show_help() {
+  echo "Usage: $0 [OPTIONS]"
+  echo
+  echo "Database backup script"
+  echo
+  echo "Options:"
+  echo "  --type=TYPE    Export type: light (default) or full"
+  echo "  --fast         Use fast compression (default: max compression)"
+  echo "  --help         Show this help"
+  exit 0
+}
+
+# ===== Argument Parsing =====
+export_type="light"
+compression_mode="max"
+
+while [[ $# -gt 0 ]]; do
+  case "$1" in
+    --type=*)
+      export_type="${1#*=}"
+      [[ "$export_type" != "light" && "$export_type" != "full" ]] && {
+        echo_color "${RED}Error: Invalid type. Use 'light' or 'full'${NC}"
+        exit 1
+      }
+      shift
+      ;;
+    --fast)
+      compression_mode="fast"
+      shift
+      ;;
+    --help)
+      show_help
+      ;;
+    *)
+      echo_color "${RED}Error: Unknown option '$1'${NC}"
+      show_help
+      exit 1
+      ;;
+  esac
+done
+
 # ===== Main Script =====
 mkdir -p "$log_folder"
 mkdir -p "$export_folder"
 
-# Determine export type
-if [[ "$1" == "-full" ]]; then
-  export_type="full"
+# Set filename and display mode
+if [[ "$export_type" == "full" ]]; then
   zip_path="${zip_path}_full.7z"
   echo_color "${ORANGE}Running FULL database export${NC}"
 else
-  export_type="light"
   zip_path="${zip_path}.7z"
   echo_color "${BLUE}Running LIGHT database export${NC}"
 fi
+
+echo_color "${BLUE}Compression mode: ${compression_mode}${NC}"
 
 # Clear export folder
 if [ -d "$export_folder" ]; then
@@ -47,20 +97,24 @@ if [ -d "$export_folder" ]; then
     rm -f "$export_folder"/* 2>/dev/null
 fi
 
+#clear log
+rm $error_log
+
 # Export database with error handling
 echo_color "${BLUE}Exporting database ($export_type version)${NC}"
 
+start_dump=$(date +%s)
 if [[ "$export_type" == "full" ]]; then
   mysqldump \
    --defaults-extra-file="$config_file" \
-   --max_allowed_packet=1G \
+   --max_allowed_packet=2G \
    --default-character-set=utf8 \
    --single-transaction=TRUE "gcom" \
    --databases > "$sql_path" 2>&1
 else
   mysqldump \
    --defaults-extra-file="$config_file" \
-   --max_allowed_packet=1G \
+   --max_allowed_packet=2G \
    --default-character-set=utf8 \
    --single-transaction=TRUE "gcom" \
    --ignore-table=gcom.presence \
@@ -71,9 +125,8 @@ else
    --ignore-table=gcom.message \
    --databases > "$sql_path" 2>&1
 fi
-
-# Store exit status immediately
 dump_status=$?
+dump_duration=$(($(date +%s) - start_dump))
 
 # Check and display errors
 if [ $dump_status -ne 0 ]; then
@@ -93,16 +146,44 @@ if [ $dump_status -ne 0 ]; then
 fi
 
 # Only proceed with compression if dump succeeded
-echo_color "${GREEN}Database export successful${NC}"
+echo_color "${GREEN}Database export successful (took $(format_duration $dump_duration))${NC}"
 
-# Compress sql file
-echo_color "${BLUE}Compressing sql file${NC}"
-7z a -t7z -m0=lzma -mx=9 -mfb=64 -md=32m -ms=on "$zip_path" "$sql_path" 2>&1 | tee -a "$error_log"
+# Compression settings
+start_compress=$(date +%s)
+if [[ "$compression_mode" == "fast" ]]; then
+  echo_color "${BLUE}Using FAST compression${NC}"
+  7z a -t7z \
+    -m0=lzma2 \
+    -mx=1 \
+    -md=32m \
+    -mmt=on \
+    "$zip_path" "$sql_path" 2>&1 | tee -a "$error_log"
+else
+  echo_color "${BLUE}Using MAXIMUM compression${NC}"
+  7z a -t7z \
+    -m0=lzma2 \
+    -mx=9 \
+    -mfb=273 \
+    -md=256m \
+    -ms=on \
+    -mmt=off \
+    -myx=9 \
+    -mqs=on \
+    "$zip_path" "$sql_path" 2>&1 | tee -a "$error_log"
+fi
+compress_duration=$(($(date +%s) - start_compress))
+
+# Calculate and show compression ratio
+original_size=$(stat -c %s "$sql_path")
+compressed_size=$(stat -c %s "$zip_path")
+ratio=$(echo "scale=2; ($original_size - $compressed_size) * 100 / $original_size" | bc)
+echo_color "${GREEN}Compression: ${ratio}% (mode: $compression_mode, took $(format_duration $compress_duration))${NC}" | tee -a "$error_log"
 
 # Delete sql file
 echo_color "${BLUE}Deleting temporary sql file${NC}"
 rm -f "$sql_path"
 
 # Send success notification
-echo_color "${GREEN}Success ($export_type export), sending success notification${NC}"
+total_duration=$(($dump_duration + $compress_duration))
+echo_color "${GREEN}Success ($export_type export, total time: $(format_duration $total_time))${NC}"
 curl -u admin:admin "http://utils.3gcominside.com/sendEmail/a.azdad@3gcom-int.com/db_gcom_export_success"
