@@ -1,0 +1,1 @@
+echo "alias deploy='~/docker/deploy.sh'" > ~/.bash_aliases
