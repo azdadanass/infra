@@ -1,5 +1,4 @@
 [mysqld]
-server-id				= 2
 pid-file				= /var/run/mysqld/mysqld.pid
 socket					= /var/run/mysqld/mysqld.sock
 log_bin					= /var/lib/mysql/mysql-bin
