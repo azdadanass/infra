@@ -4,8 +4,9 @@ ssh 192.168.1.51
 
 
 
+mkdir -p /home/azdad/backup/full
 
-xtrabackup --backup --user=admin --password --target-dir=/backup
+xtrabackup --backup --user=root --password=root --target-dir=/home/azdad/backup/full/test1
 
 
 
@@ -14,8 +15,8 @@ xtrabackup --backup --user=admin --password --target-dir=/backup
 sudo systemctl stop mysql
 sudo xtrabackup --prepare --target-dir=/home/azdad/test1
 sudo mkdir -p /home/azadad/backup_mysql
-sudo cp -R /var/lib/mysql/* /home/azadad/backup_mysql
-sudo rm -rf /var/lib/mysql/*
+sudo cp -R /var/lib/mysql /home/azadad/backup_mysql
+sudo rm -rf /var/lib/mysql
 sudo xtrabackup --copy-back --target-dir=/home/azdad/test1 --datadir=/var/lib/mysql
 sudo chown -R mysql:mysql /var/lib/mysql
 sudo systemctl start mysql
