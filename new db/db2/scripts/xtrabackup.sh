@@ -4,6 +4,24 @@
 script_dir=$(dirname $0)
 base_dir=/home/azdad/backup/xtrabackup/
 state_file=/tmp/xtrabackup_rotation.state
+db1_ip=192.168.1.50
+
+# Colors (for terminal only)
+BLUE='\033[0;34m'
+GREEN='\033[0;32m'
+ORANGE='\033[0;33m'
+RED='\033[0;31m'
+NC='\033[0m' # No Color
+
+# ===== Functions =====
+echo_color() {
+  echo -e "$1"
+}
+
+log_error() {
+  echo "$1" >> "$error_log"
+  echo_color "${RED}$1${NC}"
+}
 
 # Read the last used directory number or default to 1
 if [ -f "$state_file" ]; then
@@ -24,13 +42,15 @@ echo "$next_used" > "$state_file"
 # Create the directory if it doesn't exist
 mkdir -p "$backup_dir"
 
-echo "Using backup directory: $backup_dir"
+
+echo_color "${BLUE}Using backup directory: $backup_dir${NC}"
 
 echo "$backup_dir"/*
 rm -rf "$backup_dir"/*
 
 # remote backup
-ssh azdad@192.168.1.50 "xtrabackup --backup --user=root --password=root --stream=xbstream" | xbstream -x -C $backup_dir
+echo_color "${BLUE}Start Remote Backup ($db1_ip)${NC}"
+ssh azdad@$db1_ip "xtrabackup --backup --user=root --password=root --stream=xbstream" | xbstream -x -C $backup_dir
 
-#restor backup locally
-sudo "$script_dir"/restore-backup.sh
+#restore backup locally
+sudo "$script_dir"/restore-backup.sh $backup_dir

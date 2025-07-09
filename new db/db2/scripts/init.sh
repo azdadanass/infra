@@ -55,12 +55,15 @@ sudo percona-release enable tools release
 sudo apt -y install percona-xtrabackup-80  
 
 
+#automate ssh with db1
+ssh-keygen
+ssh-copy-id azdad@192.168.1.50
 
 
 
 # Make executable
-sudo chmod 755 /home/azdad/restore-backup.sh
+sudo chmod 755 /home/azdad/scripts/restore-backup.sh
 
 # Create sudoers entry
-sudo bash -c 'echo "azdad ALL=(ALL) NOPASSWD: /home/azdad/restore-backup.sh" > /etc/sudoers.d/azdad-mysql'
+sudo bash -c 'echo "azdad ALL=(ALL) NOPASSWD: /home/azdad/scripts/restore-backup.sh" > /etc/sudoers.d/azdad-mysql'
 sudo chmod 440 /etc/sudoers.d/azdad-mysql
