@@ -23,6 +23,10 @@ log_error() {
   echo_color "${RED}$1${NC}"
 }
 
+# ===== Time Tracking =====
+start_time=$(date +%s)
+echo_color "${ORANGE}[$(date +'%Y-%m-%d %H:%M:%S')] Starting backup process${NC}"
+
 # Read the last used directory number or default to 1
 if [ -f "$state_file" ]; then
     last_used=$(cat "$state_file")
@@ -42,15 +46,35 @@ echo "$next_used" > "$state_file"
 # Create the directory if it doesn't exist
 mkdir -p "$backup_dir"
 
-
 echo_color "${BLUE}Using backup directory: $backup_dir${NC}"
 
 echo "$backup_dir"/*
 rm -rf "$backup_dir"/*
 
 # remote backup
-echo_color "${BLUE}Start Remote Backup ($db1_ip)${NC}"
+echo_color "${ORANGE}[$(date +'%Y-%m-%d %H:%M:%S')] Starting remote backup from $db1_ip${NC}"
 ssh azdad@$db1_ip "xtrabackup --backup --user=root --password=root --stream=xbstream" | xbstream -x -C $backup_dir
+remote_backup_status=$?
 
-#restore backup locally
+if [ $remote_backup_status -eq 0 ]; then
+    echo_color "${ORANGE}[$(date +'%Y-%m-%d %H:%M:%S')] Remote backup completed successfully${NC}"
+else
+    echo_color "${RED}[$(date +'%Y-%m-%d %H:%M:%S')] Remote backup failed!${NC}"
+    exit 1
+fi
+
+# restore backup locally
+echo_color "${ORANGE}[$(date +'%Y-%m-%d %H:%M:%S')] Starting local restore${NC}"
 sudo "$script_dir"/restore-backup.sh $backup_dir
+restore_status=$?
+
+if [ $restore_status -eq 0 ]; then
+    echo_color "${ORANGE}[$(date +'%Y-%m-%d %H:%M:%S')] Local restore completed successfully${NC}"
+else
+    echo_color "${RED}[$(date +'%Y-%m-%d %H:%M:%S')] Local restore failed!${NC}"
+fi
+
+# Calculate and display total duration
+end_time=$(date +%s)
+duration=$((end_time - start_time))
+echo_color "${ORANGE}[$(date +'%Y-%m-%d %H:%M:%S')] Total execution time: ${duration} seconds${NC}"
