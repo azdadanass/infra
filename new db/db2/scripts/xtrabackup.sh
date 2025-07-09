@@ -29,8 +29,8 @@ echo "Using backup directory: $backup_dir"
 echo "$backup_dir"/*
 rm -rf "$backup_dir"/*
 
-ssh azdad@192.168.1.50 \
-"xtrabackup --backup --user=root --password=root --stream=xbstream" | xbstream -x -C $backup_dir
+# remote backup
+ssh azdad@192.168.1.50 "xtrabackup --backup --user=root --password=root --stream=xbstream" | xbstream -x -C $backup_dir
 
-
-"$script_dir"/restore-backup.sh
+#restor backup locally
+sudo "$script_dir"/restore-backup.sh
