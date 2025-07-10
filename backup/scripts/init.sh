@@ -15,3 +15,13 @@ sudo snap install rclone
 rclone config
 
 
+#crontab file
+(crontab -l 2>/dev/null; echo "30 * * * * /home/azdad/scripts/backup.sh '/home/azdad/backup'") | crontab -
+(crontab -l 2>/dev/null; echo "40 20 * * * /home/azdad/scripts/backup.sh '/home/azdad/backup' -sendNotification") | crontab -
+(crontab -l 2>/dev/null; echo "30 * * * * /home/azdad/scripts/backup.sh '/home/azdad/drive/drive3/backup'") | crontab -
+(crontab -l 2>/dev/null; echo "40 22 * * * /home/azdad/scripts/backup.sh '/home/azdad/drive/drive3/backup' -sendNotification") | crontab -
+(crontab -l 2>/dev/null; echo "00 00 * * * /home/azdad/scripts/delete-old-db-gcom.sh") | crontab -
+(crontab -l 2>/dev/null; echo "00 01 * * * /home/azdad/scripts/rclone.sh -size-only") | crontab -
+(crontab -l 2>/dev/null; echo "00 05 * * * /home/azdad/scripts/rclone.sh") | crontab -
+
+
