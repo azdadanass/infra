@@ -1,0 +1,49 @@
+[mysqld]
+# General Settings
+datadir=/var/lib/mysql
+socket=/var/lib/mysql/mysql.sock
+log-error=/var/log/mysqld.log
+pid-file=/var/run/mysqld/mysqld.pid
+
+# Network
+max_allowed_packet=256M
+wait_timeout=300
+interactive_timeout=300
+
+# Memory Configuration (16GB RAM)
+innodb_buffer_pool_size = 11G            # 69% RAM (balanced for 200 connections)
+innodb_buffer_pool_instances = 11        # 1 instance per ~1GB pool
+innodb_log_buffer_size = 128M            # Increased for HDD write efficiency
+key_buffer_size = 16M
+tmp_table_size = 64M                     # Reduced for connection scaling
+max_heap_table_size = 64M                # Must match tmp_table_size
+
+# InnoDB HDD Optimization
+innodb_dedicated_server = ON
+innodb_flush_log_at_trx_commit = 1       # Keep ACID compliance
+innodb_flush_method = O_DIRECT           # Best for HDD durability
+innodb_read_io_threads = 16              # High concurrency for HDD
+innodb_write_io_threads = 16
+innodb_io_capacity = 400                 # HDD-appropriate
+innodb_io_capacity_max = 800
+innodb_flush_neighbors = 1               # Group writes (reduces HDD seeks)
+innodb_adaptive_hash_index = ON          # Helps HDD random reads
+
+# Connection Settings
+max_connections = 200
+thread_cache_size = 100                  # 50% of max_connections
+back_log = 150                           # Queue for connection bursts
+table_open_cache = 5000                  # Supports more connections
+table_definition_cache = 2500
+
+# MySQL 8.0 Features
+innodb_parallel_read_threads = 4
+binlog_expire_logs_seconds = 604800      # 7-day retention
+binlog_group_commit_sync_delay = 100     # Group commit optimization
+innodb_deadlock_detect = ON
+innodb_fast_shutdown = 1
+
+# Safety & Monitoring
+performance_schema = ON
+slow_query_log = ON
+long_query_time = 2

@@ -1,0 +1,3 @@
+#to monitor
+SELECT * FROM performance_schema.memory_summary_global_by_event_name
+ORDER BY COUNT_ALLOC DESC LIMIT 20;
