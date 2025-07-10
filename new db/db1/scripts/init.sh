@@ -40,6 +40,7 @@ mysql -u root -proot -e "FLUSH PRIVILEGES;"
 echo_color "${BLUE}copy mysqld.conf and restart mysql${NC}"
 sudo systemctl stop mysql
 sudo cp $script_dir/mysqld.cnf /etc/mysql/mysql.conf.d/mysqld.cnf
+sudo cp $script_dir/client.cnf /etc/mysql/conf.d/client.cnf
 sudo systemctl start mysql
 
 sudo usermod -aG mysql $USER
