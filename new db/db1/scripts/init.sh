@@ -39,7 +39,7 @@ mysql -u root -proot -e "GRANT ALL PRIVILEGES ON *.* TO 'tomcat'@'%';"
 mysql -u root -proot -e "FLUSH PRIVILEGES;"
 
 echo_color "${BLUE}Create user backup in database${NC}"
-mysql -u root -proot -e "CREATE USER 'backup'@'localhost'' IDENTIFIED BY 'backup';"
+mysql -u root -proot -e "CREATE USER 'backup'@'localhost' IDENTIFIED BY 'backup';"
 mysql -u root -proot -e "GRANT SELECT, SHOW VIEW, TRIGGER, LOCK TABLES, PROCESS ON *.* TO 'backup'@'localhost';"
 mysql -u root -proot -e "FLUSH PRIVILEGES;"
 
