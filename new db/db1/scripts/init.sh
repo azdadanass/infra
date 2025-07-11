@@ -29,13 +29,19 @@ echo_color "${BLUE}Install mysql & p7zip-full${NC}"
 sudo apt -y install mysql-server p7zip-full
 
 
-# Création de l'utilisateur tomcat dans la base de donnée
-echo_color "${BLUE}Create user tomcat in database${NC}"
+
 sudo mysql -e "ALTER USER 'root'@'localhost' IDENTIFIED WITH mysql_native_password by 'root';"
+
+# Création uses tomcat & backup
+echo_color "${BLUE}Create user tomcat in database${NC}"
 mysql -u root -proot -e "CREATE USER 'tomcat'@'%' IDENTIFIED BY 'tacmot';"
 mysql -u root -proot -e "GRANT ALL PRIVILEGES ON *.* TO 'tomcat'@'%';"
 mysql -u root -proot -e "FLUSH PRIVILEGES;"
 
+echo_color "${BLUE}Create user backup in database${NC}"
+mysql -u root -proot -e "CREATE USER 'backup'@'localhost'' IDENTIFIED BY 'backup';"
+mysql -u root -proot -e "GRANT SELECT, SHOW VIEW, TRIGGER, LOCK TABLES, PROCESS ON *.* TO 'backup'@'localhost';"
+mysql -u root -proot -e "FLUSH PRIVILEGES;"
 
 echo_color "${BLUE}copy mysqld.conf and restart mysql${NC}"
 sudo systemctl stop mysql
