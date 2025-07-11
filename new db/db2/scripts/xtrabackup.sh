@@ -4,7 +4,7 @@
 script_dir=$(dirname $0)
 base_dir=/home/azdad/backup/xtrabackup/
 state_file=/tmp/xtrabackup_rotation.state
-db1_ip=192.168.1.50
+db1_ip=$DATABASE1_IP #from /etc/environment
 
 # Colors (for terminal only)
 BLUE='\033[0;34m'
