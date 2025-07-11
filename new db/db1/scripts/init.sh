@@ -61,3 +61,10 @@ sudo apt update
 sudo percona-release enable tools release
 sudo apt -y install percona-xtrabackup-80  
 
+
+#crontab file
+echo_color "${BLUE}Create crontab file${NC}"
+(crontab -l 2>/dev/null; echo "00 19 * * * /home/azdad/scripts/export_db.sh") | crontab -
+(crontab -l 2>/dev/null; echo "00 00 * * SUN /home/azdad/scripts/export_db.sh --type=full") | crontab -
+
+
