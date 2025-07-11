@@ -71,6 +71,8 @@ read -p "Enter database1 address [192.168.1.50] : " database1_ip
 database1_ip=${database1_ip:-192.168.1.50}
 echo "DATABASE1_IP=$database1_ip" | sudo tee -a /etc/environment
 
+source /etc/environment
+
 
 #automate ssh with db1
 ssh-keygen

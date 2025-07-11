@@ -1,4 +1,5 @@
 #!/bin/bash
+source /etc/environment
 
 # ===== Config =====
 script_dir=$(dirname $0)
