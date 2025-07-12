@@ -77,3 +77,7 @@ source /etc/environment
 #automate ssh with db1
 ssh-keygen
 ssh-copy-id azdad@$database1_ip
+
+#crontab file
+echo_color "${BLUE}Create crontab file${NC}"
+(crontab -l 2>/dev/null; echo "30 8,12,18 * * * /home/azdad/scripts/xtrabackup.sh") | crontab -
