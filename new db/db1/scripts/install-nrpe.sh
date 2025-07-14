@@ -1,7 +1,9 @@
-sudo apt-get install -y nagios-nrpe-server nagios-plugins
+sudo apt-get install -y nagios-nrpe-server nagios-plugins nagios-plugins-contrib
 
 
 
-echo "allowed_hosts=127.0.0.1,192.168.1.131,172.17.0.3" | sudo tee -a /etc/nagios/nrpe.cfg
-echo "command[check_disk]=/usr/lib/nagios/plugins/check_disk -w 20% -c 10% -p /" | sudo tee -a /etc/nagios/nrpe.cfg
+echo "allowed_hosts=127.0.0.1,192.168.1.131" | sudo tee -a /etc/nagios/nrpe.cfg
+echo "command[check_load]=/usr/lib/nagios/plugins/check_load -w 5,4,3 -c 10,8,6"  | sudo tee -a /etc/nagios/nrpe.cfg
+echo "command[check_disk]=/usr/lib/nagios/plugins/check_disk -w 20% -c 10% -p /"  | sudo tee -a /etc/nagios/nrpe.cfg
+echo "command[check_memory]=/usr/lib/nagios/plugins/check_memory -w 85% -c 90%"  | sudo tee -a /etc/nagios/nrpe.cfg
 sudo systemctl restart nagios-nrpe-server
