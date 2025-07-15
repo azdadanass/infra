@@ -43,6 +43,11 @@ mysql -u root -proot -e "CREATE USER 'backup'@'localhost' IDENTIFIED BY 'backup'
 mysql -u root -proot -e "GRANT SELECT, SHOW VIEW, TRIGGER, LOCK TABLES, PROCESS ON *.* TO 'backup'@'localhost';"
 mysql -u root -proot -e "FLUSH PRIVILEGES;"
 
+echo_color "${BLUE}Create user nagios in database${NC}"
+mysql -u root -proot -e "CREATE USER 'nagios'@'localhost' IDENTIFIED BY 'nagios';"
+mysql -u root -proot -e "GRANT USAGE, PROCESS, REPLICATION CLIENT, SUPER ON *.* TO 'nagios'@'localhost';"
+mysql -u root -proot -e "FLUSH PRIVILEGES;"
+
 echo_color "${BLUE}copy mysqld.conf and restart mysql${NC}"
 sudo systemctl stop mysql
 sudo cp $script_dir/mysqld.cnf /etc/mysql/mysql.conf.d/mysqld.cnf
