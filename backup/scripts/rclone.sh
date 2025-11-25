@@ -30,7 +30,7 @@ run_rclone() {
   local options="$3"
   
   log_message "${BLUE}$description${NC}" "$description"
-  /snap/bin/rclone -v $options "$source" "$remote_dir/$(basename "$source")" 2>&1 | tee -a "$log"
+  rclone -v $options "$source" "$remote_dir/$(basename "$source")" 2>&1 | tee -a "$log"
 }
 
 # ===== Main Script =====
@@ -41,7 +41,7 @@ killall rclone 2>/dev/null  # Suppress "no process found" errors
 
 # Sync db_gcom (always sync, not copy)
 log_message "${BLUE}sync db_gcom${NC}" "sync db_gcom"
-/snap/bin/rclone -v sync "$source_dir/db_gcom" "$remote_dir/db_gcom" 2>&1 | tee -a "$log"
+rclone -v sync "$source_dir/db_gcom" "$remote_dir/db_gcom" 2>&1 | tee -a "$log"
 
 # Determine flags based on argument
 if [[ "$1" = "-size-only" ]]; then
