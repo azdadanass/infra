@@ -1,49 +1,91 @@
-```bash
 #!/usr/bin/env bash
 
-set -euo pipefail
-
 # ============================================================
-# OpenVPN Server Installer for Ubuntu 24.04
+# OpenVPN NAT Server Installer
+# Ubuntu 24.04
+#
+# OpenVPN 2.6
+# Easy-RSA 3.1.x
 #
 # Features:
-#   - OpenVPN 2.6
-#   - Easy-RSA PKI
+#   - OpenVPN server
 #   - NAT for VPN clients
-#   - No route required on the LAN router
+#   - No route required on the router
 #   - Persistent iptables rules
-#   - Self-contained .ovpn client configuration
+#   - Password-protected CA
+#   - First client certificate
+#   - Self-contained .ovpn client file
 #
-# Tested design:
-#   LAN:       192.168.1.0/24
-#   Gateway:   192.168.1.1
-#   VPN:       10.8.0.0/24
-#   Interface: automatically detected
+# Client file:
+#   /home/<user>/openvpn-clients/<client>.ovpn
 # ============================================================
 
-if [[ "${EUID}" -ne 0 ]]; then
-    echo "ERROR: Run this script as root."
-    echo "Example: sudo bash $0"
+set -Eeuo pipefail
+
+# ------------------------------------------------------------
+# Require root
+# ------------------------------------------------------------
+
+if [[ "$EUID" -ne 0 ]]; then
+    echo "ERROR: Run this script with sudo."
+    echo
+    echo "Example:"
+    echo "  sudo bash $0"
     exit 1
 fi
 
-echo
-echo "============================================================"
-echo "        OpenVPN NAT Server Installer - Ubuntu 24.04"
-echo "============================================================"
-echo
+# ------------------------------------------------------------
+# Determine the real user
+# ------------------------------------------------------------
+#
+# If executed as:
+#
+#   sudo bash install-openvpn.sh
+#
+# SUDO_USER will be the normal logged-in user.
+#
+# If executed directly as root, USER will be used.
+# ------------------------------------------------------------
+
+INSTALL_USER="${SUDO_USER:-$USER}"
+
+INSTALL_HOME="$(getent passwd "$INSTALL_USER" | cut -d: -f6)"
+
+if [[ -z "$INSTALL_HOME" || ! -d "$INSTALL_HOME" ]]; then
+    echo "ERROR: Could not determine home directory for user:"
+    echo "       $INSTALL_USER"
+    exit 1
+fi
 
 # ------------------------------------------------------------
-# Helper functions
+# Paths
+# ------------------------------------------------------------
+
+EASYRSA_DIR="/etc/openvpn/easy-rsa"
+SERVER_DIR="/etc/openvpn/server"
+
+CLIENT_DIR="$INSTALL_HOME/openvpn-clients"
+
+VPN_NETWORK="10.8.0.0"
+VPN_NETMASK="255.255.255.0"
+VPN_CIDR="10.8.0.0/24"
+
+# ------------------------------------------------------------
+# Functions
 # ------------------------------------------------------------
 
 ask_default() {
     local prompt="$1"
     local default="$2"
-    local value
+    local answer
 
-    read -r -p "$prompt [$default]: " value
-    echo "${value:-$default}"
+    if [[ -n "$default" ]]; then
+        read -r -p "$prompt [$default]: " answer
+        echo "${answer:-$default}"
+    else
+        read -r -p "$prompt: " answer
+        echo "$answer"
+    fi
 }
 
 valid_port() {
@@ -64,137 +106,183 @@ valid_ipv4() {
         [[ "$octet" =~ ^[0-9]+$ ]] || return 1
         (( octet >= 0 && octet <= 255 )) || return 1
     done
+
+    return 0
 }
 
 valid_cidr() {
     local cidr="$1"
-    local ip="${cidr%/*}"
-    local prefix="${cidr#*/}"
+    local ip
+    local prefix
 
     [[ "$cidr" == */* ]] || return 1
+
+    ip="${cidr%/*}"
+    prefix="${cidr#*/}"
+
     valid_ipv4 "$ip" || return 1
+
     [[ "$prefix" =~ ^[0-9]+$ ]] || return 1
     (( prefix >= 0 && prefix <= 32 )) || return 1
+
+    return 0
 }
+
+# ------------------------------------------------------------
+# Header
+# ------------------------------------------------------------
+
+echo
+echo "============================================================"
+echo "       OpenVPN NAT Server Installer - Ubuntu 24.04"
+echo "============================================================"
+echo
+echo "Running as root."
+echo "Client files will belong to:"
+echo
+echo "  $INSTALL_USER"
+echo
+echo "and will be stored in:"
+echo
+echo "  $CLIENT_DIR"
+echo
 
 # ------------------------------------------------------------
 # Collect configuration
 # ------------------------------------------------------------
 
-echo "Configuration"
-echo "-------------"
-echo
-
-PUBLIC_ENDPOINT="$(ask_default "Public IP address or DNS hostname" "")"
+PUBLIC_ENDPOINT="$(ask_default \
+    "Public IP address or DNS hostname" \
+    "")"
 
 while [[ -z "$PUBLIC_ENDPOINT" ]]; do
-    echo "Public IP / hostname cannot be empty."
-    PUBLIC_ENDPOINT="$(ask_default "Public IP address or DNS hostname" "")"
+    echo "ERROR: Public IP / hostname cannot be empty."
+    PUBLIC_ENDPOINT="$(ask_default \
+        "Public IP address or DNS hostname" \
+        "")"
 done
 
-OPENVPN_PORT="$(ask_default "OpenVPN UDP port" "1194")"
+OPENVPN_PORT="$(ask_default \
+    "OpenVPN UDP port" \
+    "1194")"
 
 while ! valid_port "$OPENVPN_PORT"; do
-    echo "Invalid port."
-    OPENVPN_PORT="$(ask_default "OpenVPN UDP port" "1194")"
+    echo "ERROR: Invalid UDP port."
+    OPENVPN_PORT="$(ask_default \
+        "OpenVPN UDP port" \
+        "1194")"
 done
 
-LAN_GATEWAY="$(ask_default "LAN default gateway" "192.168.1.1")"
+LAN_GATEWAY="$(ask_default \
+    "LAN default gateway" \
+    "192.168.1.1")"
 
 while ! valid_ipv4 "$LAN_GATEWAY"; do
-    echo "Invalid IPv4 address."
-    LAN_GATEWAY="$(ask_default "LAN default gateway" "192.168.1.1")"
+    echo "ERROR: Invalid IPv4 address."
+    LAN_GATEWAY="$(ask_default \
+        "LAN default gateway" \
+        "192.168.1.1")"
 done
 
-LAN_SUBNET="$(ask_default "LAN subnet" "192.168.1.0/24")"
+LAN_SUBNET="$(ask_default \
+    "LAN subnet" \
+    "192.168.1.0/24")"
 
 while ! valid_cidr "$LAN_SUBNET"; do
-    echo "Invalid CIDR subnet."
-    LAN_SUBNET="$(ask_default "LAN subnet" "192.168.1.0/24")"
+    echo "ERROR: Invalid CIDR subnet."
+    LAN_SUBNET="$(ask_default \
+        "LAN subnet" \
+        "192.168.1.0/24")"
 done
 
-CLIENT_NAME="$(ask_default "First VPN client name" "laptop")"
+CLIENT_NAME="$(ask_default \
+    "First VPN client name" \
+    "laptop")"
 
 while [[ ! "$CLIENT_NAME" =~ ^[a-zA-Z0-9_-]+$ ]]; do
-    echo "Client name may contain only letters, numbers, '-' and '_'."
-    CLIENT_NAME="$(ask_default "First VPN client name" "laptop")"
+    echo "ERROR: Client name may contain only:"
+    echo "       letters, numbers, '-' and '_'."
+
+    CLIENT_NAME="$(ask_default \
+        "First VPN client name" \
+        "laptop")"
 done
 
-VPN_SUBNET="10.8.0.0"
-VPN_NETMASK="255.255.255.0"
-VPN_CIDR="10.8.0.0/24"
-
-echo
-echo "The Easy-RSA CA will be protected by a password."
-read -r -s -p "Enter CA password: " CA_PASSWORD
-echo
-read -r -s -p "Confirm CA password: " CA_PASSWORD_CONFIRM
-echo
-
-if [[ "$CA_PASSWORD" != "$CA_PASSWORD_CONFIRM" ]]; then
-    echo "ERROR: CA passwords do not match."
-    exit 1
-fi
-
-if [[ -z "$CA_PASSWORD" ]]; then
-    echo "ERROR: CA password cannot be empty."
-    exit 1
-fi
-
 # ------------------------------------------------------------
-# Detect network interface
+# Detect LAN interface
 # ------------------------------------------------------------
 
 echo
 echo "Detecting LAN interface..."
 
-LAN_INTERFACE="$(ip route get "$LAN_GATEWAY" 2>/dev/null | awk '
-    {
-        for (i=1; i<=NF; i++) {
-            if ($i == "dev") {
-                print $(i+1)
-                exit
+LAN_INTERFACE="$(
+    ip route get "$LAN_GATEWAY" 2>/dev/null |
+    awk '
+        {
+            for (i = 1; i <= NF; i++) {
+                if ($i == "dev") {
+                    print $(i+1)
+                    exit
+                }
             }
         }
-    }
-')"
+    '
+)"
 
 if [[ -z "$LAN_INTERFACE" ]]; then
+    echo
     echo "ERROR: Could not determine LAN interface."
-    echo "Check that the gateway $LAN_GATEWAY is reachable."
+    echo
+    echo "Gateway:"
+    echo "  $LAN_GATEWAY"
+    echo
+    echo "Check your network configuration."
     exit 1
 fi
 
-SERVER_LAN_IP="$(ip -4 addr show dev "$LAN_INTERFACE" | awk '
-    /inet / {
-        sub(/\/.*/, "", $2)
-        print $2
-        exit
-    }
-')"
+SERVER_LAN_IP="$(
+    ip -4 addr show dev "$LAN_INTERFACE" |
+    awk '
+        /inet / {
+            sub(/\/.*/, "", $2)
+            print $2
+            exit
+        }
+    '
+)"
 
 if [[ -z "$SERVER_LAN_IP" ]]; then
+    echo
     echo "ERROR: Could not determine server LAN IP."
     exit 1
 fi
 
+# ------------------------------------------------------------
+# Display configuration
+# ------------------------------------------------------------
+
 echo
-echo "Detected network configuration:"
-echo "  Interface : $LAN_INTERFACE"
-echo "  Server IP : $SERVER_LAN_IP"
-echo "  Gateway   : $LAN_GATEWAY"
-echo "  LAN       : $LAN_SUBNET"
-echo "  VPN       : $VPN_CIDR"
-echo "  UDP port  : $OPENVPN_PORT"
-echo "  Endpoint  : $PUBLIC_ENDPOINT"
-echo "  Client    : $CLIENT_NAME"
+echo "============================================================"
+echo "Configuration"
+echo "============================================================"
+echo
+echo "Public endpoint : $PUBLIC_ENDPOINT"
+echo "UDP port        : $OPENVPN_PORT"
+echo "LAN gateway     : $LAN_GATEWAY"
+echo "LAN subnet      : $LAN_SUBNET"
+echo "LAN interface   : $LAN_INTERFACE"
+echo "Server LAN IP   : $SERVER_LAN_IP"
+echo "VPN subnet      : $VPN_CIDR"
+echo "Client name     : $CLIENT_NAME"
+echo "Install user    : $INSTALL_USER"
+echo "Client directory: $CLIENT_DIR"
 echo
 
-read -r -p "Continue? [Y/n]: " CONFIRM
+read -r -p "Continue installation? [Y/n]: " CONFIRM
 CONFIRM="${CONFIRM:-Y}"
 
 if [[ ! "$CONFIRM" =~ ^[Yy]$ ]]; then
-    echo "Cancelled."
+    echo "Installation cancelled."
     exit 0
 fi
 
@@ -203,11 +291,14 @@ fi
 # ------------------------------------------------------------
 
 echo
-echo "==> Installing packages..."
+echo "============================================================"
+echo "Installing packages"
+echo "============================================================"
 
 export DEBIAN_FRONTEND=noninteractive
 
 apt-get update
+
 apt-get install -y \
     openvpn \
     easy-rsa \
@@ -215,36 +306,41 @@ apt-get install -y \
     iptables-persistent
 
 # ------------------------------------------------------------
-# Stop existing OpenVPN service if present
+# Stop existing OpenVPN service
 # ------------------------------------------------------------
+
+echo
+echo "Stopping existing OpenVPN server if present..."
 
 systemctl stop openvpn-server@server.service 2>/dev/null || true
 
 # ------------------------------------------------------------
-# Create directories
+# Prepare directories
 # ------------------------------------------------------------
 
 echo
-echo "==> Creating directories..."
-
-EASYRSA_DIR="/etc/openvpn/easy-rsa"
-SERVER_DIR="/etc/openvpn/server"
-CLIENT_DIR="/root/openvpn-clients"
+echo "Preparing directories..."
 
 mkdir -p "$EASYRSA_DIR"
 mkdir -p "$SERVER_DIR"
 mkdir -p "$CLIENT_DIR"
 
+chown "$INSTALL_USER:$INSTALL_USER" "$CLIENT_DIR"
+chmod 700 "$CLIENT_DIR"
+
 # ------------------------------------------------------------
-# Install Easy-RSA files
+# Install Easy-RSA
 # ------------------------------------------------------------
 
 echo
-echo "==> Installing Easy-RSA..."
+echo "Installing Easy-RSA..."
+
+rm -rf "$EASYRSA_DIR"
+
+mkdir -p "$EASYRSA_DIR"
 
 cp -r /usr/share/easy-rsa/* "$EASYRSA_DIR/"
 
-chown -R root:root "$EASYRSA_DIR"
 chmod 700 "$EASYRSA_DIR"
 
 cd "$EASYRSA_DIR"
@@ -254,34 +350,54 @@ cd "$EASYRSA_DIR"
 # ------------------------------------------------------------
 
 echo
-echo "==> Initializing PKI..."
-
-rm -rf "$EASYRSA_DIR/pki"
+echo "============================================================"
+echo "Initializing PKI"
+echo "============================================================"
 
 ./easyrsa init-pki
 
 # ------------------------------------------------------------
 # Create CA
 # ------------------------------------------------------------
+#
+# IMPORTANT:
+#
+# We intentionally let Easy-RSA interactively ask for the
+# password. This is the safest and most compatible method
+# with Easy-RSA 3.1.7.
+# ------------------------------------------------------------
 
 echo
-echo "==> Creating Certificate Authority..."
+echo "============================================================"
+echo "Creating Certificate Authority"
+echo "============================================================"
+echo
+echo "You will be asked to enter a CA password."
+echo
+echo "REMEMBER THIS PASSWORD."
+echo "You may need it later to create/revoke certificates."
+echo
 
-export EASYRSA_BATCH=1
-export EASYRSA_REQ_CN="OpenVPN-CA"
-export EASYRSA_PASSIN="pass:${CA_PASSWORD}"
-
-./easyrsa build-ca nopass
-
-# Secure CA key with a password after creation
-# Easy-RSA's batch mode does not conveniently accept the CA
-# password for all versions, so generate a protected CA key
-# using the interactive command if required.
-
+unset EASYRSA_BATCH
+unset EASYRSA_REQ_CN
 unset EASYRSA_PASSIN
 
-# The CA was intentionally created without a password in batch mode.
-# Protect the CA key at filesystem level.
+./easyrsa build-ca
+
+# Verify CA
+
+if [[ ! -f "$EASYRSA_DIR/pki/ca.crt" ]]; then
+    echo
+    echo "ERROR: CA certificate was not created."
+    exit 1
+fi
+
+if [[ ! -f "$EASYRSA_DIR/pki/private/ca.key" ]]; then
+    echo
+    echo "ERROR: CA private key was not created."
+    exit 1
+fi
+
 chmod 600 "$EASYRSA_DIR/pki/private/ca.key"
 
 # ------------------------------------------------------------
@@ -289,47 +405,59 @@ chmod 600 "$EASYRSA_DIR/pki/private/ca.key"
 # ------------------------------------------------------------
 
 echo
-echo "==> Creating OpenVPN server certificate..."
+echo "============================================================"
+echo "Creating OpenVPN server certificate"
+echo "============================================================"
 
-export EASYRSA_BATCH=1
-export EASYRSA_REQ_CN="OpenVPN-Server"
+unset EASYRSA_REQ_CN
+unset EASYRSA_PASSIN
 
 ./easyrsa build-server-full server nopass
 
 # ------------------------------------------------------------
-# Create DH parameters
+# Generate DH
 # ------------------------------------------------------------
 
 echo
-echo "==> Generating Diffie-Hellman parameters..."
+echo "============================================================"
+echo "Generating Diffie-Hellman parameters"
+echo "============================================================"
+echo
 echo "This may take some time..."
 
 ./easyrsa gen-dh
 
 # ------------------------------------------------------------
-# Create TLS crypt key
+# Generate tls-crypt key
 # ------------------------------------------------------------
 
 echo
-echo "==> Generating tls-crypt key..."
+echo "============================================================"
+echo "Generating tls-crypt key"
+echo "============================================================"
 
-openvpn --genkey tls-crypt "$EASYRSA_DIR/pki/ta.key"
+openvpn \
+    --genkey \
+    tls-crypt \
+    "$EASYRSA_DIR/pki/ta.key"
 
 # ------------------------------------------------------------
-# Create first client certificate
+# Create first client
 # ------------------------------------------------------------
 
 echo
-echo "==> Creating client certificate: $CLIENT_NAME..."
+echo "============================================================"
+echo "Creating client certificate: $CLIENT_NAME"
+echo "============================================================"
 
 ./easyrsa build-client-full "$CLIENT_NAME" nopass
 
 # ------------------------------------------------------------
-# Copy server certificates
+# Install server certificates
 # ------------------------------------------------------------
 
 echo
-echo "==> Installing server certificates..."
+echo "Installing OpenVPN certificates..."
 
 cp "$EASYRSA_DIR/pki/ca.crt" \
    "$SERVER_DIR/ca.crt"
@@ -353,11 +481,13 @@ chmod 600 "$SERVER_DIR/dh.pem"
 chmod 600 "$SERVER_DIR/ta.key"
 
 # ------------------------------------------------------------
-# OpenVPN server configuration
+# Create OpenVPN server configuration
 # ------------------------------------------------------------
 
 echo
-echo "==> Creating OpenVPN server configuration..."
+echo "============================================================"
+echo "Creating OpenVPN server configuration"
+echo "============================================================"
 
 cat > "$SERVER_DIR/server.conf" <<EOF
 port $OPENVPN_PORT
@@ -365,7 +495,7 @@ proto udp
 dev tun
 
 topology subnet
-server $VPN_SUBNET $VPN_NETMASK
+server $VPN_NETWORK $VPN_NETMASK
 
 ca $SERVER_DIR/ca.crt
 cert $SERVER_DIR/server.crt
@@ -382,10 +512,10 @@ persist-tun
 user nobody
 group nogroup
 
-# Route VPN clients to the home LAN
+# Allow VPN clients to access the LAN
 push "route $LAN_SUBNET"
 
-# Use the LAN gateway as DNS
+# Use LAN gateway as DNS
 push "dhcp-option DNS $LAN_GATEWAY"
 
 tls-version-min 1.2
@@ -403,48 +533,62 @@ chmod 600 "$SERVER_DIR/server.conf"
 # ------------------------------------------------------------
 
 echo
-echo "==> Enabling IPv4 forwarding..."
+echo "============================================================"
+echo "Enabling IPv4 forwarding"
+echo "============================================================"
 
 cat > /etc/sysctl.d/99-openvpn.conf <<EOF
 net.ipv4.ip_forward = 1
 EOF
 
-sysctl --system >/dev/null
+sysctl --system
 
 # ------------------------------------------------------------
-# Configure iptables NAT
+# Configure NAT
 # ------------------------------------------------------------
 
 echo
-echo "==> Configuring NAT..."
+echo "============================================================"
+echo "Configuring NAT"
+echo "============================================================"
 
-# Remove duplicate rules if the script is run again.
+# Remove matching rules if the script is re-run.
+
 iptables -t nat -D POSTROUTING \
     -s "$VPN_CIDR" \
     -o "$LAN_INTERFACE" \
-    -j MASQUERADE 2>/dev/null || true
+    -j MASQUERADE \
+    2>/dev/null || true
 
 iptables -D FORWARD \
     -s "$VPN_CIDR" \
     -o "$LAN_INTERFACE" \
-    -j ACCEPT 2>/dev/null || true
+    -j ACCEPT \
+    2>/dev/null || true
 
 iptables -D FORWARD \
     -d "$VPN_CIDR" \
     -i "$LAN_INTERFACE" \
     -m conntrack \
     --ctstate ESTABLISHED,RELATED \
-    -j ACCEPT 2>/dev/null || true
+    -j ACCEPT \
+    2>/dev/null || true
+
+# Add NAT
 
 iptables -t nat -A POSTROUTING \
     -s "$VPN_CIDR" \
     -o "$LAN_INTERFACE" \
     -j MASQUERADE
 
+# Allow VPN -> LAN
+
 iptables -A FORWARD \
     -s "$VPN_CIDR" \
     -o "$LAN_INTERFACE" \
     -j ACCEPT
+
+# Allow return traffic LAN -> VPN
 
 iptables -A FORWARD \
     -d "$VPN_CIDR" \
@@ -453,14 +597,27 @@ iptables -A FORWARD \
     --ctstate ESTABLISHED,RELATED \
     -j ACCEPT
 
+# Save rules
+
 netfilter-persistent save
 
 # ------------------------------------------------------------
-# Create self-contained client configuration
+# Create client directory
+# ------------------------------------------------------------
+
+mkdir -p "$CLIENT_DIR"
+
+chown "$INSTALL_USER:$INSTALL_USER" "$CLIENT_DIR"
+chmod 700 "$CLIENT_DIR"
+
+# ------------------------------------------------------------
+# Create self-contained .ovpn
 # ------------------------------------------------------------
 
 echo
-echo "==> Creating client configuration..."
+echo "============================================================"
+echo "Creating client configuration"
+echo "============================================================"
 
 CLIENT_OVPN="$CLIENT_DIR/${CLIENT_NAME}.ovpn"
 
@@ -502,30 +659,38 @@ CLIENT_OVPN="$CLIENT_DIR/${CLIENT_NAME}.ovpn"
     echo "</tls-crypt>"
 } > "$CLIENT_OVPN"
 
+# Client config contains private key.
 chmod 600 "$CLIENT_OVPN"
+chown "$INSTALL_USER:$INSTALL_USER" "$CLIENT_OVPN"
 
 # ------------------------------------------------------------
 # Start OpenVPN
 # ------------------------------------------------------------
 
 echo
-echo "==> Enabling OpenVPN service..."
+echo "============================================================"
+echo "Starting OpenVPN"
+echo "============================================================"
 
 systemctl daemon-reload
+
 systemctl enable openvpn-server@server.service
+
 systemctl restart openvpn-server@server.service
 
-sleep 2
+sleep 3
 
 # ------------------------------------------------------------
 # Verify
 # ------------------------------------------------------------
 
 echo
-echo "==> Checking OpenVPN service..."
+echo "============================================================"
+echo "Verification"
+echo "============================================================"
 
 if systemctl is-active --quiet openvpn-server@server.service; then
-    echo "OpenVPN service: RUNNING"
+    echo "OpenVPN service : RUNNING"
 else
     echo
     echo "ERROR: OpenVPN failed to start."
@@ -534,22 +699,22 @@ else
     exit 1
 fi
 
-echo
-echo "==> Checking UDP port..."
-
 if ss -lun | grep -q ":${OPENVPN_PORT} "; then
-    echo "UDP port $OPENVPN_PORT: LISTENING"
+    echo "UDP port        : LISTENING ($OPENVPN_PORT)"
 else
-    echo "WARNING: Could not verify UDP port."
+    echo "WARNING: UDP port $OPENVPN_PORT was not detected."
 fi
 
-echo
-echo "==> Checking VPN interface..."
+if [[ "$(sysctl -n net.ipv4.ip_forward)" == "1" ]]; then
+    echo "IPv4 forwarding : ENABLED"
+else
+    echo "ERROR: IPv4 forwarding is disabled."
+fi
 
 if ip addr show tun0 >/dev/null 2>&1; then
-    echo "tun0: UP"
+    echo "VPN interface   : tun0 UP"
 else
-    echo "WARNING: tun0 was not found."
+    echo "ERROR: tun0 was not created."
 fi
 
 # ------------------------------------------------------------
@@ -558,40 +723,62 @@ fi
 
 echo
 echo "============================================================"
-echo "                 INSTALLATION COMPLETE"
+echo "           OPENVPN INSTALLATION COMPLETE"
 echo "============================================================"
 echo
-echo "OpenVPN server:"
-echo "  Server IP       : $SERVER_LAN_IP"
+echo "Server:"
+echo
+echo "  LAN IP          : $SERVER_LAN_IP"
 echo "  LAN interface   : $LAN_INTERFACE"
+echo "  LAN gateway     : $LAN_GATEWAY"
 echo "  LAN subnet      : $LAN_SUBNET"
-echo "  Gateway         : $LAN_GATEWAY"
 echo "  VPN subnet      : $VPN_CIDR"
 echo "  UDP port        : $OPENVPN_PORT"
 echo "  Public endpoint : $PUBLIC_ENDPOINT"
 echo
-echo "Client configuration:"
-echo "  $CLIENT_OVPN"
+echo "Client:"
 echo
-echo "Router port forwarding MUST be:"
-echo
-echo "  UDP $OPENVPN_PORT -> $SERVER_LAN_IP:$OPENVPN_PORT"
-echo
-echo "The router does NOT need a route for $VPN_CIDR."
-echo "NAT is performed by this Ubuntu server."
-echo
-echo "To monitor OpenVPN:"
-echo "  sudo journalctl -u openvpn-server@server -f"
-echo
-echo "To check status:"
-echo "  sudo systemctl status openvpn-server@server"
-echo
-echo "IMPORTANT:"
-echo "The client .ovpn file contains a private key."
-echo "Keep it secure."
-echo
-echo "Client file:"
-echo "  $CLIENT_OVPN"
+echo "  Name            : $CLIENT_NAME"
+echo "  File            : $CLIENT_OVPN"
+echo "  Owner           : $INSTALL_USER"
 echo
 echo "============================================================"
-```
+echo "ROUTER PORT FORWARD"
+echo "============================================================"
+echo
+echo "Configure your router:"
+echo
+echo "  UDP $OPENVPN_PORT"
+echo "       -> $SERVER_LAN_IP:$OPENVPN_PORT"
+echo
+echo "NO ROUTE IS REQUIRED ON THE ROUTER."
+echo
+echo "The Ubuntu server performs NAT for:"
+echo
+echo "  $VPN_CIDR -> $LAN_SUBNET"
+echo
+echo "============================================================"
+echo
+echo "Useful commands:"
+echo
+echo "  Check status:"
+echo "    sudo systemctl status openvpn-server@server"
+echo
+echo "  Watch logs:"
+echo "    sudo journalctl -u openvpn-server@server -f"
+echo
+echo "  Check listening port:"
+echo "    sudo ss -lunp | grep $OPENVPN_PORT"
+echo
+echo "  Check NAT:"
+echo "    sudo iptables -t nat -L POSTROUTING -n -v"
+echo
+echo "Client configuration:"
+echo
+echo "  $CLIENT_OVPN"
+echo
+echo "IMPORTANT:"
+echo "The .ovpn file contains a private key."
+echo "Keep it secure."
+echo
+echo "============================================================"
