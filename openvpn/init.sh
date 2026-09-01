@@ -69,6 +69,10 @@ CLIENT_DIR="$INSTALL_HOME/openvpn-clients"
 VPN_NETWORK="10.8.0.0"
 VPN_NETMASK="255.255.255.0"
 VPN_CIDR="10.8.0.0/24"
+VPN_GATEWAY="10.8.0.1"
+
+INTERNAL_DNS=""
+INTERNAL_DNS_DOMAIN=""
 
 # ------------------------------------------------------------
 # Functions
@@ -126,6 +130,32 @@ valid_cidr() {
     (( prefix >= 0 && prefix <= 32 )) || return 1
 
     return 0
+}
+
+cidr_to_netmask() {
+    local cidr="$1"
+    local prefix="${cidr#*/}"
+
+    if (( prefix == 0 )); then
+        echo "0.0.0.0"
+        return
+    fi
+
+    local mask=$(( 0xffffffff << (32 - prefix) ))
+
+    printf "%d.%d.%d.%d\n" \
+        $(( (mask >> 24) & 255 )) \
+        $(( (mask >> 16) & 255 )) \
+        $(( (mask >> 8) & 255 )) \
+        $(( mask & 255 ))
+}
+
+valid_dns_domain() {
+    local domain="$1"
+
+    [[ -n "$domain" ]] || return 1
+
+    [[ "$domain" =~ ^([a-zA-Z0-9]([a-zA-Z0-9-]{0,61}[a-zA-Z0-9])?\.)+[a-zA-Z]{2,63}$ ]]
 }
 
 # ------------------------------------------------------------
@@ -194,6 +224,37 @@ while ! valid_cidr "$LAN_SUBNET"; do
         "LAN subnet" \
         "192.168.1.0/24")"
 done
+
+
+LAN_NETMASK="$(cidr_to_netmask "$LAN_SUBNET")"
+
+
+INTERNAL_DNS="$(ask_default \
+    "Internal DNS server" \
+    "192.168.1.208")"
+
+while ! valid_ipv4 "$INTERNAL_DNS"; do
+    echo "ERROR: Invalid DNS server IPv4 address."
+    INTERNAL_DNS="$(ask_default \
+        "Internal DNS server" \
+        "192.168.1.208")"
+done
+
+INTERNAL_DNS_DOMAIN="$(ask_default \
+    "Internal DNS domain" \
+    "3gcominside.com")"
+
+while ! valid_dns_domain "$INTERNAL_DNS_DOMAIN"; do
+    echo "ERROR: Invalid DNS domain."
+    echo "Example: 3gcominside.com"
+    INTERNAL_DNS_DOMAIN="$(ask_default \
+        "Internal DNS domain" \
+        "3gcominside.com")"
+done
+
+
+
+
 
 CLIENT_NAME="$(ask_default \
     "First VPN client name" \
@@ -276,6 +337,8 @@ echo "VPN subnet      : $VPN_CIDR"
 echo "Client name     : $CLIENT_NAME"
 echo "Install user    : $INSTALL_USER"
 echo "Client directory: $CLIENT_DIR"
+echo "Internal DNS    : $INTERNAL_DNS"
+echo "DNS domain      : $INTERNAL_DNS_DOMAIN"
 echo
 
 read -r -p "Continue installation? [Y/n]: " CONFIRM
@@ -515,8 +578,11 @@ group nogroup
 # Allow VPN clients to access the LAN
 push "route $LAN_SUBNET"
 
-# Use LAN gateway as DNS
-push "dhcp-option DNS $LAN_GATEWAY"
+# Internal DNS server
+push "dhcp-option DNS $INTERNAL_DNS"
+
+# Route DNS queries for the internal domain to the internal DNS server
+push "dhcp-option DOMAIN-ROUTE ~${INTERNAL_DNS_DOMAIN}"
 
 tls-version-min 1.2
 
@@ -633,6 +699,14 @@ CLIENT_OVPN="$CLIENT_DIR/${CLIENT_NAME}.ovpn"
     echo
     echo "persist-key"
     echo "persist-tun"
+    echo
+    echo "route-nopull"
+    echo "route ${LAN_SUBNET%/*} $LAN_NETMASK $VPN_GATEWAY"
+    echo
+    echo "dhcp-option DNS $INTERNAL_DNS"
+    echo "dhcp-option DOMAIN $INTERNAL_DNS_DOMAIN"
+    echo "dhcp-option DOMAIN-ROUTE ~${INTERNAL_DNS_DOMAIN}"
+    echo
     echo
     echo "remote-cert-tls server"
     echo "auth-nocache"
