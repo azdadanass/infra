@@ -183,46 +183,46 @@ echo
 
 PUBLIC_ENDPOINT="$(ask_default \
     "Public IP address or DNS hostname" \
-    "")"
+    "41.248.252.127")"
 
 while [[ -z "$PUBLIC_ENDPOINT" ]]; do
     echo "ERROR: Public IP / hostname cannot be empty."
     PUBLIC_ENDPOINT="$(ask_default \
         "Public IP address or DNS hostname" \
-        "")"
+        "41.248.252.127")"
 done
 
 OPENVPN_PORT="$(ask_default \
     "OpenVPN UDP port" \
-    "1194")"
+    "51820")"
 
 while ! valid_port "$OPENVPN_PORT"; do
     echo "ERROR: Invalid UDP port."
     OPENVPN_PORT="$(ask_default \
         "OpenVPN UDP port" \
-        "1194")"
+        "51820")"
 done
 
 LAN_GATEWAY="$(ask_default \
     "LAN default gateway" \
-    "192.168.1.1")"
+    "192.168.100.204")"
 
 while ! valid_ipv4 "$LAN_GATEWAY"; do
     echo "ERROR: Invalid IPv4 address."
     LAN_GATEWAY="$(ask_default \
         "LAN default gateway" \
-        "192.168.1.1")"
+        "192.168.100.204")"
 done
 
 LAN_SUBNET="$(ask_default \
     "LAN subnet" \
-    "192.168.1.0/24")"
+    "192.168.100.0/24")"
 
 while ! valid_cidr "$LAN_SUBNET"; do
     echo "ERROR: Invalid CIDR subnet."
     LAN_SUBNET="$(ask_default \
         "LAN subnet" \
-        "192.168.1.0/24")"
+        "192.168.100.0/24")"
 done
 
 
@@ -231,13 +231,13 @@ LAN_NETMASK="$(cidr_to_netmask "$LAN_SUBNET")"
 
 INTERNAL_DNS="$(ask_default \
     "Internal DNS server" \
-    "192.168.1.208")"
+    "192.168.100.201")"
 
 while ! valid_ipv4 "$INTERNAL_DNS"; do
     echo "ERROR: Invalid DNS server IPv4 address."
     INTERNAL_DNS="$(ask_default \
         "Internal DNS server" \
-        "192.168.1.208")"
+        "192.168.100.201")"
 done
 
 INTERNAL_DNS_DOMAIN="$(ask_default \
@@ -258,7 +258,7 @@ done
 
 CLIENT_NAME="$(ask_default \
     "First VPN client name" \
-    "laptop")"
+    "gcom")"
 
 while [[ ! "$CLIENT_NAME" =~ ^[a-zA-Z0-9_-]+$ ]]; do
     echo "ERROR: Client name may contain only:"
@@ -266,7 +266,7 @@ while [[ ! "$CLIENT_NAME" =~ ^[a-zA-Z0-9_-]+$ ]]; do
 
     CLIENT_NAME="$(ask_default \
         "First VPN client name" \
-        "laptop")"
+        "gcom")"
 done
 
 # ------------------------------------------------------------
