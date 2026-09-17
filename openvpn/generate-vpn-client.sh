@@ -321,9 +321,6 @@ CLIENT_OVPN="$CLIENT_DIR/${CLIENT_NAME}.ovpn"
     echo "persist-key"
     echo "persist-tun"
     echo
-    echo "route-nopull"
-    echo "route ${LAN_SUBNET%/*} $LAN_NETMASK $VPN_GATEWAY"
-    echo
     echo "dhcp-option DNS $INTERNAL_DNS"
     echo "dhcp-option DOMAIN $INTERNAL_DNS_DOMAIN"
     echo "dhcp-option DOMAIN-ROUTE ~${INTERNAL_DNS_DOMAIN}"
