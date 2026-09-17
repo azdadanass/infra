@@ -576,7 +576,7 @@ user nobody
 group nogroup
 
 # Allow VPN clients to access the LAN
-push "route $LAN_SUBNET"
+push "route ${LAN_SUBNET%/*} $LAN_NETMASK"
 
 # Internal DNS server
 push "dhcp-option DNS $INTERNAL_DNS"
@@ -699,9 +699,6 @@ CLIENT_OVPN="$CLIENT_DIR/${CLIENT_NAME}.ovpn"
     echo
     echo "persist-key"
     echo "persist-tun"
-    echo
-    echo "route-nopull"
-    echo "route ${LAN_SUBNET%/*} $LAN_NETMASK $VPN_GATEWAY"
     echo
     echo "dhcp-option DNS $INTERNAL_DNS"
     echo "dhcp-option DOMAIN $INTERNAL_DNS_DOMAIN"
