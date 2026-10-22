@@ -165,7 +165,7 @@ if ! systemctl is-active --quiet mysql; then
 fi
 
 # Verify the actual SERVER version, not just the client version.
-SERVER_VERSION="$(mysql -NBe 'SELECT VERSION()' 2>/dev/null || true)"
+SERVER_VERSION="$(mysql -uroot -p"${MYSQL_ROOT_PASSWORD}" -NBe 'SELECT VERSION()' 2>/dev/null || true)"
 
 if [[ "$SERVER_VERSION" != "$MYSQL_VERSION" ]]; then
     error "Expected server ${MYSQL_VERSION}, found: ${SERVER_VERSION:-unavailable}"
@@ -174,20 +174,6 @@ if [[ "$SERVER_VERSION" != "$MYSQL_VERSION" ]]; then
 fi
 
 success "MySQL Server ${SERVER_VERSION} installed."
-
-# ------------------------------------------------------------
-# Configure root authentication
-# ------------------------------------------------------------
-
-log "Configuring MySQL root account..."
-
-# This assumes the root account can initially authenticate through
-# the local Unix socket. If package setup required a password and
-# socket login fails, authenticate using that configured password.
-mysql -e "
-ALTER USER 'root'@'localhost'
-IDENTIFIED WITH mysql_native_password BY '${MYSQL_ROOT_PASSWORD}';
-"
 
 # ------------------------------------------------------------
 # Create application and monitoring users

@@ -1,6 +1,0 @@
-[client]
-user=backup
-password=backup
-host=localhost
-port=3306
-
