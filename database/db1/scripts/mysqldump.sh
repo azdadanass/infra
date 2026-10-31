@@ -7,6 +7,7 @@ log_folder="/home/azdad/log"
 error_log="$log_folder/export_db_error.txt"
 config_file="$script_dir/config.cnf"
 export_folder="/home/azdad/backup/mysqldump"
+backup_folder="/data/backup/mysqldump"
 sql_path=/tmp/gcom.sql
 zip_path="$export_folder/gcom_${current_date}"
 
@@ -80,6 +81,7 @@ done
 # ===== Main Script =====
 mkdir -p "$log_folder"
 mkdir -p "$export_folder"
+mkdir -p "$backup_folder"
 
 # Set filename and display mode
 if [[ "$export_type" == "full" ]]; then
@@ -99,7 +101,7 @@ if [ -d "$export_folder" ]; then
 fi
 
 #clear log
-rm $error_log
+rm -f $error_log
 
 # Export database with error handling
 echo_color "${BLUE}Exporting database ($export_type version)${NC}"
@@ -179,6 +181,23 @@ original_size=$(stat -c %s "$sql_path")
 compressed_size=$(stat -c %s "$zip_path")
 ratio=$(echo "scale=2; ($original_size - $compressed_size) * 100 / $original_size" | bc)
 echo_color "${GREEN}Compression: ${ratio}% (mode: $compression_mode, took $(format_duration $compress_duration))${NC}" | tee -a "$error_log"
+
+# Copy compressed dump to backup folder
+echo_color "${BLUE}Copying compressed dump to $backup_folder${NC}"
+
+if cp -f "$zip_path" "$backup_folder/"; then
+  echo_color "${GREEN}Backup successfully copied to $backup_folder${NC}"
+else
+  log_error "Failed to copy backup to $backup_folder at $(date)"
+  exit 1
+fi
+
+# Delete backup files older than 60 days
+echo_color "${BLUE}Cleaning backup files older than 60 days from $backup_folder${NC}"
+
+find "$backup_folder" -maxdepth 1 -type f -mtime +60 -print -delete
+
+echo_color "${GREEN}Old backup cleanup completed${NC}"
 
 # Delete sql file
 echo_color "${BLUE}Deleting temporary sql file${NC}"
