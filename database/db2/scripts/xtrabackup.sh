@@ -18,18 +18,14 @@ RED='\033[0;31m'
 NC='\033[0m' # No Color
 
 # ===== Functions =====
-echo_color() {
-  echo -e "$1"
-}
-
 log_error() {
   echo "$1" >> "$backup_error_log"
-  echo_color "${RED}$1${NC}"
+  echo_color red "$1"
 }
 
 # ===== Time Tracking =====
 start_time=$(date +%s)
-echo_color "${ORANGE}[$(date +'%Y-%m-%d %H:%M:%S')] Starting backup process${NC}"
+echo_color orange "[$(date +'%Y-%m-%d %H:%M:%S')] Starting backup process"
 
 # Read the last used directory number or default to 1
 if [ -f "$state_file" ]; then
@@ -51,22 +47,22 @@ echo "$next_used" > "$state_file"
 mkdir -p "$log_folder"
 mkdir -p "$backup_dir"
 
-echo_color "${BLUE}Using backup directory: $backup_dir${NC}"
+echo_color blue "Using backup directory: $backup_dir"
 
 echo "$backup_dir"/*
 rm -rf "$backup_dir"/*
 
 # remote backup
-echo_color "${ORANGE}[$(date +'%Y-%m-%d %H:%M:%S')] Starting remote backup from $db1_ip${NC}"
+echo_color orange "[$(date +'%Y-%m-%d %H:%M:%S')] Starting remote backup from $db1_ip"
 ssh azdad@$db1_ip "xtrabackup --backup --user=root --password=root --stream=xbstream" 2> "$backup_error_log" | xbstream -x -C "$backup_dir"
 remote_backup_status=$?
 
 if [ $remote_backup_status -eq  ]; then
-    echo_color "${ORANGE}[$(date +'%Y-%m-%d %H:%M:%S')] Remote backup completed successfully${NC}"
+    echo_color orange "[$(date +'%Y-%m-%d %H:%M:%S')] Remote backup completed successfully"
     # Clean up error log if exists
     rm -f "$backup_dir/xtrabackup_error.log"
 else
-    echo_color "${RED}[$(date +'%Y-%m-%d %H:%M:%S')] Remote backup failed!${NC}"
+    echo_color red "[$(date +'%Y-%m-%d %H:%M:%S')] Remote backup failed!"
     
     # Capture additional error context
     {
@@ -84,23 +80,23 @@ else
 fi
 
 # restore backup locally
-echo_color "${ORANGE}[$(date +'%Y-%m-%d %H:%M:%S')] Starting local restore${NC}"
+echo_color orange "[$(date +'%Y-%m-%d %H:%M:%S')] Starting local restore"
 sudo "$script_dir"/restore-backup.sh $backup_dir
 sudo "$script_dir"/restore-backup.sh "$backup_dir" 2> "$restore_error_log"
 restore_status=$?
 
 
 #if [ $restore_status -eq 0 ]; then
-#    echo_color "${ORANGE}[$(date +'%Y-%m-%d %H:%M:%S')] Local restore completed successfully${NC}"
+#    echo_color orange "[$(date +'%Y-%m-%d %H:%M:%S')] Local restore completed successfully"
 #else
-#    echo_color "${RED}[$(date +'%Y-%m-%d %H:%M:%S')] Local restore failed!${NC}"
+#    echo_color red "[$(date +'%Y-%m-%d %H:%M:%S')] Local restore failed!"
 #fi
 
 if [ $restore_status -eq 0 ]; then
-    echo_color "${GREEN}[$(date +'%Y-%m-%d %H:%M:%S')] Local restore completed successfully${NC}"
+    echo_color "${GREEN}[$(date +'%Y-%m-%d %H:%M:%S')] Local restore completed successfully"
     rm -f "$restore_error_log"
 else
-    echo_color "${RED}[$(date +'%Y-%m-%d %H:%M:%S')] Local restore failed with status $restore_status${NC}"
+    echo_color red "[$(date +'%Y-%m-%d %H:%M:%S')] Local restore failed with status $restore_status"
     
     # Create comprehensive restore error report
     restore_report="$log_folder/restore_failure_$(date +%Y%m%d_%H%M%S).report"
@@ -127,9 +123,9 @@ else
         "http://utils.3gcominside.com/sendEmailAttachement/a.azdad@3gcom-int.com/xtrabackup_restore_error")
     
     if [[ "${curl_response: -3}" == "200" ]]; then
-        echo_color "${ORANGE}Restore error report sent successfully${NC}"
+        echo_color orange "Restore error report sent successfully"
     else
-        echo_color "${RED}Failed to send restore error report (HTTP ${curl_response: -3})${NC}"
+        echo_color red "Failed to send restore error report (HTTP ${curl_response: -3})"
     fi
     exit 1
 fi
@@ -137,4 +133,4 @@ fi
 # Calculate and display total duration
 end_time=$(date +%s)
 duration=$((end_time - start_time))
-echo_color "${ORANGE}[$(date +'%Y-%m-%d %H:%M:%S')] Total execution time: ${duration} seconds${NC}"
+echo_color orange "[$(date +'%Y-%m-%d %H:%M:%S')] Total execution time: ${duration} seconds"

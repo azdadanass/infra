@@ -18,16 +18,10 @@ TOMCAT_PASSWORD="tacmot"
 BACKUP_PASSWORD="backup"
 NAGIOS_PASSWORD="nagios"
 
-BLUE='\033[0;34m'
-GREEN='\033[0;32m'
-YELLOW='\033[0;33m'
-RED='\033[0;31m'
-NC='\033[0m'
-
-log()     { echo -e "${BLUE}[INFO]${NC} $*"; }
-success() { echo -e "${GREEN}[OK]${NC} $*"; }
-warning() { echo -e "${YELLOW}[WARNING]${NC} $*"; }
-error()   { echo -e "${RED}[ERROR]${NC} $*" >&2; }
+log()     { echo_color blue "[INFO] $*"; }
+success() { echo_color green "[OK] $*"; }
+warning() { echo_color yellow "[WARNING] $*"; }
+error()   { echo_color red "[ERROR] $*" >&2; }
 
 trap 'error "Failed at line $LINENO: $BASH_COMMAND"' ERR
 
@@ -36,7 +30,7 @@ trap 'error "Failed at line $LINENO: $BASH_COMMAND"' ERR
 # ------------------------------------------------------------
 
 if [[ $EUID -ne 0 ]]; then
-    echo "Run with: sudo bash $0"
+    echo "Run with: sudo $0"
     exit 1
 fi
 

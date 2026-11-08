@@ -15,7 +15,7 @@ SCRIPT_DIR="$(cd -- "$(dirname -- "${BASH_SOURCE[0]}")" && pwd)"
 # Configure Percona XtraBackup
 # ------------------------------------------------------------
 
-echo_color "${BLUE}make restore-backup.sh executable without password${NC}"
+echo_color blue "make restore-backup.sh executable without password"
 # Make executable
 sudo chmod 755 /home/azdad/scripts/restore-backup.sh
 
@@ -37,7 +37,7 @@ ssh-keygen
 ssh-copy-id azdad@$database1_ip
 
 #crontab file
-echo_color "${BLUE}Create crontab file${NC}"
+echo_color blue "Create crontab file"
 (crontab -l 2>/dev/null; echo "30 8,12,18 * * * /home/azdad/scripts/xtrabackup.sh") | crontab -
 
 

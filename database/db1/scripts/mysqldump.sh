@@ -11,21 +11,14 @@ backup_folder="/data/backup/mysqldump"
 sql_path=/tmp/gcom.sql
 zip_path="$export_folder/gcom_${current_date}"
 
-# Colors (for terminal only)
-BLUE='\033[0;34m'
-GREEN='\033[0;32m'
-ORANGE='\033[0;33m'
-RED='\033[0;31m'
-NC='\033[0m' # No Color
+
 
 # ===== Functions =====
-echo_color() {
-  echo -e "$1"
-}
+
 
 log_error() {
   echo "$1" >> "$error_log"
-  echo_color "${RED}$1${NC}"
+  echo_color red "$1"
 }
 
 format_duration() {
@@ -58,7 +51,7 @@ while [[ $# -gt 0 ]]; do
     --type=*)
       export_type="${1#*=}"
       [[ "$export_type" != "light" && "$export_type" != "full" ]] && {
-        echo_color "${RED}Error: Invalid type. Use 'light' or 'full'${NC}"
+        echo_color red "Error: Invalid type. Use 'light' or 'full'"
         exit 1
       }
       shift
@@ -71,7 +64,7 @@ while [[ $# -gt 0 ]]; do
       show_help
       ;;
     *)
-      echo_color "${RED}Error: Unknown option '$1'${NC}"
+      echo_color red"Error: Unknown option '$1'"
       show_help
       exit 1
       ;;
@@ -86,17 +79,17 @@ mkdir -p "$backup_folder"
 # Set filename and display mode
 if [[ "$export_type" == "full" ]]; then
   zip_path="${zip_path}_full.7z"
-  echo_color "${ORANGE}Running FULL database export${NC}"
+  echo_color orange "Running FULL database export"
 else
   zip_path="${zip_path}.7z"
-  echo_color "${BLUE}Running LIGHT database export${NC}"
+  echo_color blue "Running LIGHT database export"
 fi
 
-echo_color "${BLUE}Compression mode: ${compression_mode}${NC}"
+echo_color blue "Compression mode: ${compression_mode}"
 
 # Clear export folder
 if [ -d "$export_folder" ]; then
-    echo_color "${BLUE}Clearing export folder${NC}"
+    echo_color blue "Clearing export folder"
     rm -f "$export_folder"/* 2>/dev/null
 fi
 
@@ -104,7 +97,7 @@ fi
 rm -f $error_log
 
 # Export database with error handling
-echo_color "${BLUE}Exporting database ($export_type version)${NC}"
+echo_color blue "Exporting database ($export_type version)"
 
 start_dump=$(date +%s)
 if [[ "$export_type" == "full" ]]; then
@@ -138,23 +131,23 @@ if [ $dump_status -ne 0 ]; then
   grep -i error "$sql_path" >&2
   
   # Skip compression on failure
-  echo_color "${RED}Database export failed - skipping compression${NC}"
-  echo_color "${BLUE}Deleting temporary sql file${NC}"
+  echo_color red "Database export failed - skipping compression"
+  echo_color blue "Deleting temporary sql file"
   rm -f "$sql_path"
   
   # Send error notification and exit
-  echo_color "${RED}Errors detected, sending error log${NC}"
+  echo_color red "Errors detected, sending error log"
   curl -F "file=@$error_log" "http://utils.3gcominside.com/sendEmailAttachement/a.azdad@3gcom-int.com/db_gcom_export_error"
   exit 1
 fi
 
 # Only proceed with compression if dump succeeded
-echo_color "${GREEN}Database export successful (took $(format_duration $dump_duration))${NC}"
+echo_color "${GREEN}Database export successful (took $(format_duration $dump_duration))"
 
 # Compression settings
 start_compress=$(date +%s)
 if [[ "$compression_mode" == "fast" ]]; then
-  echo_color "${BLUE}Using FAST compression${NC}"
+  echo_color blue "Using FAST compression"
   7z a -t7z \
     -m0=lzma2 \
     -mx=1 \
@@ -162,7 +155,7 @@ if [[ "$compression_mode" == "fast" ]]; then
     -mmt=on \
     "$zip_path" "$sql_path" 2>&1 | tee -a "$error_log"
 else
-  echo_color "${BLUE}Using MAXIMUM compression${NC}"
+  echo_color blue "Using MAXIMUM compression"
   7z a -t7z \
     -m0=lzma2 \
     -mx=9 \
@@ -180,30 +173,30 @@ compress_duration=$(($(date +%s) - start_compress))
 original_size=$(stat -c %s "$sql_path")
 compressed_size=$(stat -c %s "$zip_path")
 ratio=$(echo "scale=2; ($original_size - $compressed_size) * 100 / $original_size" | bc)
-echo_color "${GREEN}Compression: ${ratio}% (mode: $compression_mode, took $(format_duration $compress_duration))${NC}" | tee -a "$error_log"
+echo_color "${GREEN}Compression: ${ratio}% (mode: $compression_mode, took $(format_duration $compress_duration))" | tee -a "$error_log"
 
 # Copy compressed dump to backup folder
-echo_color "${BLUE}Copying compressed dump to $backup_folder${NC}"
+echo_color blue "Copying compressed dump to $backup_folder"
 
 if cp -f "$zip_path" "$backup_folder/"; then
-  echo_color "${GREEN}Backup successfully copied to $backup_folder${NC}"
+  echo_color "${GREEN}Backup successfully copied to $backup_folder"
 else
   log_error "Failed to copy backup to $backup_folder at $(date)"
   exit 1
 fi
 
 # Delete backup files older than 60 days
-echo_color "${BLUE}Cleaning backup files older than 60 days from $backup_folder${NC}"
+echo_color blue "Cleaning backup files older than 60 days from $backup_folder"
 
 find "$backup_folder" -maxdepth 1 -type f -mtime +60 -print -delete
 
-echo_color "${GREEN}Old backup cleanup completed${NC}"
+echo_color "${GREEN}Old backup cleanup completed"
 
 # Delete sql file
-echo_color "${BLUE}Deleting temporary sql file${NC}"
+echo_color blue "Deleting temporary sql file"
 rm -f "$sql_path"
 
 # Send success notification
 total_duration=$(($dump_duration + $compress_duration))
-echo_color "${GREEN}Success ($export_type export, total time: $(format_duration $total_time))${NC}"
+echo_color "${GREEN}Success ($export_type export, total time: $(format_duration $total_time))"
 curl -u admin:admin "http://utils.3gcominside.com/sendEmail/a.azdad@3gcom-int.com/db_gcom_export_success"

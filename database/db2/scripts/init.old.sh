@@ -12,32 +12,29 @@ RED='\033[0;31m'
 NC='\033[0m' # No Color
 
 # ===== Functions =====
-echo_color() {
-  echo -e "$1"
-}
 
 log_error() {
   echo "$1" >> "$error_log"
-  echo_color "${RED}$1${NC}"
+  echo_color red "$1"
 }
 
 
 sudo apt update 
 
 
-echo_color "${BLUE}Install mysql & p7zip-full${NC}"
+echo_color blue "Install mysql & p7zip-full"
 sudo apt -y install mysql-server p7zip-full
 
 
 # Création de l'utilisateur tomcat dans la base de donnée
-echo_color "${BLUE}Create user tomcat in database${NC}"
+echo_color blue "Create user tomcat in database"
 sudo mysql -e "ALTER USER 'root'@'localhost' IDENTIFIED WITH mysql_native_password by 'root';"
 mysql -u root -proot -e "CREATE USER 'tomcat'@'%' IDENTIFIED BY 'tacmot';"
 mysql -u root -proot -e "GRANT ALL PRIVILEGES ON *.* TO 'tomcat'@'%';"
 mysql -u root -proot -e "FLUSH PRIVILEGES;"
 
 
-echo_color "${BLUE}copy mysqld.conf and restart mysql${NC}"
+echo_color blue "copy mysqld.conf and restart mysql"
 sudo systemctl stop mysql
 sudo cp $script_dir/mysqld.cnf /etc/mysql/mysql.conf.d/mysqld.cnf
 sudo cp $script_dir/client.cnf /etc/mysql/conf.d/client.cnf
@@ -48,7 +45,7 @@ sudo chmod 750 /var/lib/mysql
 
 
 
-echo_color "${BLUE}Install percona-xtrabackup for directory backups${NC}"
+echo_color blue "Install percona-xtrabackup for directory backups"
 wget https://repo.percona.com/apt/percona-release_latest.$(lsb_release -sc)_all.deb
 sudo dpkg -i percona-release_latest.$(lsb_release -sc)_all.deb
 sudo apt update
@@ -57,7 +54,7 @@ sudo apt -y install percona-xtrabackup-80
 
 
 
-echo_color "${BLUE}make restore-backup.sh executable without password${NC}"
+echo_color blue "make restore-backup.sh executable without password"
 # Make executable
 sudo chmod 755 /home/azdad/scripts/restore-backup.sh
 
@@ -79,5 +76,5 @@ ssh-keygen
 ssh-copy-id azdad@$database1_ip
 
 #crontab file
-echo_color "${BLUE}Create crontab file${NC}"
+echo_color blue "Create crontab file"
 (crontab -l 2>/dev/null; echo "30 8,12,18 * * * /home/azdad/scripts/xtrabackup.sh") | crontab -
