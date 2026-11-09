@@ -11,6 +11,9 @@ SCRIPT_DIR="$(cd -- "$(dirname -- "${BASH_SOURCE[0]}")" && pwd)"
 
  "${SCRIPT_DIR}/install-mysql-8.0.42.sh"
 
+
+ sudo usermod -aG mysql azdad
+
 # ------------------------------------------------------------
 # Configure backup cron jobs (for the current sudo caller)
 # ------------------------------------------------------------
