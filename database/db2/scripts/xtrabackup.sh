@@ -10,12 +10,7 @@ log_folder="/home/azdad/log"
 backup_error_log="$log_folder/xtrabackup_backup_error.txt"
 restore_error_log="$log_folder/xtrabackup_restore_error.txt"
 
-# Colors (for terminal only)
-BLUE='\033[0;34m'
-GREEN='\033[0;32m'
-ORANGE='\033[0;33m'
-RED='\033[0;31m'
-NC='\033[0m' # No Color
+
 
 # ===== Functions =====
 log_error() {
@@ -93,7 +88,7 @@ restore_status=$?
 #fi
 
 if [ $restore_status -eq 0 ]; then
-    echo_color "${GREEN}[$(date +'%Y-%m-%d %H:%M:%S')] Local restore completed successfully"
+    echo_color green "[$(date +'%Y-%m-%d %H:%M:%S')] Local restore completed successfully"
     rm -f "$restore_error_log"
 else
     echo_color red "[$(date +'%Y-%m-%d %H:%M:%S')] Local restore failed with status $restore_status"

@@ -3,13 +3,6 @@
 # ===== Config =====
 backup_dir=$1
 
-# Colors (for terminal only)
-BLUE='\033[0;34m'
-GREEN='\033[0;32m'
-ORANGE='\033[0;33m'
-RED='\033[0;31m'
-NC='\033[0m' # No Color
-
 # ===== Functions =====
 
 
@@ -20,21 +13,21 @@ log_error() {
 
 echo_color blue "try restore $backup_dir"
 
-echo_color "${GREEN}stop mysql"
+echo_color green "stop mysql"
 systemctl stop mysql
 
 
-echo_color "${GREEN}Prepare (xtrabackup --prepare)"
+echo_color green "Prepare (xtrabackup --prepare)"
 xtrabackup --prepare --target-dir=$backup_dir
 
-echo_color "${GREEN}clear /var/lib/mysql/*"
+echo_color green "clear /var/lib/mysql/*"
 rm -rf /var/lib/mysql/*
 
-echo_color "${GREEN}Restore(xtrabackup --copy-back)"
+echo_color green "Restore(xtrabackup --copy-back)"
 xtrabackup --copy-back --target-dir=$backup_dir --datadir=/var/lib/mysql
 
-echo_color "${GREEN}chown -R mysql:mysql /var/lib/mysql"
+echo_color green "chown -R mysql:mysql /var/lib/mysql"
 chown -R mysql:mysql /var/lib/mysql
 
-echo_color "${GREEN}start mysql"
+echo_color green "start mysql"
 systemctl start mysql
