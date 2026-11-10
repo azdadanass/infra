@@ -14,7 +14,7 @@ rm $errors && touch $errors
 #gcom
 echo "rsync gcom"
 mkdir -p $backup_folder/gcom
-rsync -azv azdad@192.168.100.70:/home/azdad/files $backup_folder/gcom/   2>> $errors
+rsync -azv --rsync-path="sudo rsync" azdad@192.168.100.70:/home/azdad/files "$backup_folder/gcom/"
 
 #mise
 echo "rsync mise"
@@ -22,14 +22,19 @@ mkdir -p $backup_folder/mise
 rsync -azv azdad@192.168.100.130:/home/azdad/files $backup_folder/mise/   2>> $errors
 
 #orange
-echo "rsync orange"
-mkdir -p $backup_folder/orange
-rsync -azv azdad@192.168.100.140:/home/azdad/files $backup_folder/orange/   2>> $errors
+echo "rsync orangebw"
+mkdir -p $backup_folder/orangebw
+rsync -azv azdad@192.168.100.121:/home/azdad/files $backup_folder/orangebw/   2>> $errors
 
 #db_gcom
 echo "rsync db_gcom"
 mkdir -p $backup_folder/db_gcom
-rsync -azv root@192.168.100.99:/root/backup/db/* $backup_folder/db_gcom/  2>> $errors
+rsync -azv azdad@192.168.100.120:/home/azdad/backup/mysqldump/* $backup_folder/db_gcom/  2>> $errors
+
+#db_orangebw
+echo "rsync db_orangebw"
+mkdir -p $backup_folder/db_orangebw
+rsync -azv azdad@192.168.100.121:/home/azdad/backup/db/* $backup_folder/db_orangebw/  2>> $errors
 
 #db_mise
 echo "rsync db_mise"

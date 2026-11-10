@@ -11,8 +11,7 @@ echo //192.168.100.51/drive3  /home/azdad/drive/drive3 cifs user=3gcom,pass=root
 sudo mount -a
 
 
-curl https://rclone.org/install.sh | sudo bash
-
+sudo snap install rclone
 rclone config
 
 
